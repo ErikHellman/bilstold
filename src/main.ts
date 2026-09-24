@@ -1,3 +1,5 @@
+import { AudioEngine } from './audio/audio';
+import { Sfx } from './audio/sfx';
 import { FixedLoop, startRaf } from './core/loop';
 import { createSession, nextCity, resolveSeed, type Session } from './game/session';
 import { Input, type InputState } from './input/input';
@@ -23,6 +25,11 @@ let attract: Session | null = null;
 let seedField = new URLSearchParams(location.search).get('seed') ?? randomSeed();
 let saveTimer = AUTOSAVE_S;
 let unsub: (() => void)[] = [];
+const audio = new AudioEngine(settings);
+const sfx = new Sfx(audio, () => ({ x: renderer.cam.x, y: renderer.cam.y }));
+const unlockAudio = () => { audio.unlock(); audio.setActive(screen === 'playing' && !document.hidden); };
+addEventListener('keydown', unlockAudio);
+addEventListener('pointerdown', unlockAudio);
 
 const idle: InputState = { accel: 0, brake: 0, steer: 0, fire: false, handbrake: false, pressed: new Set() };
 
@@ -52,6 +59,8 @@ let seedDebounce = 0;
 function openTitle(notice: string | null = null) {
   screen = 'title';
   session = null;
+  sfx.attach(null);
+  audio.setActive(false);
   for (const u of unsub) u();
   unsub = [];
   const r = readSave(store);
@@ -88,12 +97,15 @@ function startSession(s: Session) {
   hide();
   screen = 'playing';
   saveTimer = AUTOSAVE_S;
+  sfx.attach(s.world);
+  audio.setActive(true);
   for (const u of unsub) u();
   unsub = [
     s.world.bus.on('missionEnd', () => save()),
     s.world.bus.on('cityComplete', e => {
       save();
       screen = 'cityComplete';
+      audio.setActive(false);
       showCityComplete(e.index, () => { const n = nextCity(s); startSession(n); save(); });
     }),
   ];
@@ -103,11 +115,12 @@ function startSession(s: Session) {
 
 function pause() {
   screen = 'paused';
+  audio.setActive(false);
   showPause({
     settings,
     onResume: resume,
     onQuit: () => { save(); openTitle(); },
-    onSettings: s => { settings = s; saveSettings(); },
+    onSettings: s => { settings = s; saveSettings(); audio.setVolumes(s); },
   });
 }
 
@@ -115,6 +128,7 @@ function resume() {
   hide();
   input.releaseAll();
   screen = 'playing';
+  audio.setActive(true);
 }
 
 function step(dt: number) {
@@ -126,7 +140,8 @@ function step(dt: number) {
     case 'playing': {
       const w = session!.world;
       if (inp.pressed.has('pause')) { pause(); return; }
-      if (inp.pressed.has('map')) { screen = 'map'; renderer.showMap = true; return; }
+      if (inp.pressed.has('map')) { screen = 'map'; renderer.showMap = true; audio.setActive(false); return; }
+      if (input.lastDevice === 'gamepad' && !audio.ctx) unlockAudio();
       w.step(inp, dt);
       w.ps.playTime += dt;
       saveTimer -= dt;
@@ -134,7 +149,7 @@ function step(dt: number) {
       break;
     }
     case 'map':
-      if (inp.pressed.has('map') || inp.pressed.has('pause')) { screen = 'playing'; renderer.showMap = false; }
+      if (inp.pressed.has('map') || inp.pressed.has('pause')) { screen = 'playing'; renderer.showMap = false; audio.setActive(true); }
       break;
     case 'paused':
       if (inp.pressed.has('pause')) resume();
@@ -145,15 +160,18 @@ function step(dt: number) {
 }
 
 const loop = new FixedLoop(step);
-let raf = startRaf(loop, a => renderer.render(a), () => (settings.batterySaver || screen === 'title' ? 30 : 60));
+const frame = (a: number) => { renderer.render(a); if (screen === 'playing') sfx.tick(); };
+let raf = startRaf(loop, frame, () => (settings.batterySaver || screen === 'title' ? 30 : 60));
 
 document.addEventListener('visibilitychange', () => {
   if (document.hidden) {
     save();
     raf.stop();
+    audio.setActive(false);
   } else {
+    if (screen === 'playing') audio.setActive(true);
     raf.stop();
-    raf = startRaf(loop, a => renderer.render(a), () => (settings.batterySaver || screen === 'title' ? 30 : 60));
+    raf = startRaf(loop, frame, () => (settings.batterySaver || screen === 'title' ? 30 : 60));
   }
 });
 addEventListener('pagehide', save);
@@ -162,7 +180,7 @@ function expose(s: Session) {
   if (!import.meta.env.DEV) return;
   const g = window as unknown as Record<string, unknown>;
   g.__w = s.world;
-  g.__game = { get screen() { return screen; }, renderer, input };
+  g.__game = { get screen() { return screen; }, renderer, input, audio };
 }
 
 openTitle();
