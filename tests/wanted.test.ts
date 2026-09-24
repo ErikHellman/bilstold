@@ -38,7 +38,7 @@ test('wanted level decays when out of sight', () => {
   expect(w.ps.wanted.level).toBe(0);
 });
 test('police chase at level 2', () => {
-  const w = arena(); w.ps.wanted.level = 2; w.ps.wanted.heat = 300; run(w, 8);
+  const w = arena(); w.systemsEnabled.death = false; w.ps.wanted.level = 2; w.ps.wanted.heat = 300; run(w, 8);
   expect(w.vehicles.items.some(v => v.active && v.def.role === 'police' && v.ai.mode === 'chase')).toBe(true);
 });
 test('cop touching idle player on foot busts them', () => {

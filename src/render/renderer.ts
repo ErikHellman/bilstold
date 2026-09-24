@@ -69,6 +69,7 @@ export class Renderer {
         this.cam.addShake(Math.max(0, 7 * (1 - d / 600)));
       }),
       w.bus.on('shot', e => this.particles.emit('muzzle', e.x, e.y, 0, 0, 0.05, 4)),
+      w.bus.on('respawn', () => this.cam.snap(w.player.x, w.player.y)),
       w.bus.on('blood', e => this.particles.burst('blood', e.x, e.y, 5, 60, 0.3, 2)),
       w.bus.on('crash', e => { if (e.force > 150) this.particles.burst('spark', e.x, e.y, 6, 120, 0.3, 2); }),
     );

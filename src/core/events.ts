@@ -1,4 +1,5 @@
 import type { Ped, Vehicle } from '../sim/types';
+import type { Landmark } from '../world/citygen';
 import type { WeaponId } from '../game/data/weapons';
 import type { PickupId } from '../game/data/pickups';
 
@@ -49,4 +50,7 @@ export interface GameEvents {
   phoneRing: { x: number; y: number };
   cityComplete: { index: number };
   frenzyStart: {};
+  crushed: { vehicle: Vehicle };
+  garage: { landmark: Landmark; vehicle: Vehicle };
+  respawn: { kind: 'wasted' | 'busted' | 'gameover' };
 }

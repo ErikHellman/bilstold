@@ -46,6 +46,8 @@ export class World {
   readonly systemsEnabled: Record<string, boolean> = {};
   /** Parking spots whose car was stolen or destroyed this session. */
   readonly takenSpots = new Set<string>();
+  /** Landmark id → world time when the shop may trigger again. */
+  readonly shopCooldowns = new Map<number, number>();
   private systems: { name: string; fn: System }[] = [];
   private scratchPeds: Ped[] = [];
   private scratchVehicles: Vehicle[] = [];

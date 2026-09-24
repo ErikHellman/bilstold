@@ -3,7 +3,10 @@ import type { Vehicle } from '../sim/types';
 import { doorPoint, forwardSpeed } from '../sim/vehicle';
 import { fireWeapon } from '../sim/combat';
 import { FOOT_WEAPONS, type WeaponId } from './data/weapons';
-import { findWalkableNear, tileAtWorld } from '../world/query';
+import { findWalkableNear, nearestLandmark, tileAtWorld } from '../world/query';
+import { TILE } from '../core/const';
+import { clearWanted, LAW_KINDS, LAW_ROLES } from './wanted';
+import { gameOver } from './progression';
 import { T, isWalkable } from '../world/tiles';
 
 export { newPlayerState } from '../sim/world';
@@ -133,4 +136,53 @@ export function playerExit(w: World): void {
   p.vx = 0; p.vy = 0;
   if (speed > 150) { p.knocked = 0.6; p.health -= 5; }
   w.bus.emit('exitCar', { vehicle: v });
+}
+
+/** Watches for the player dying or being arrested and respawns them after a short pause. */
+export function deathSystem(w: World, dt: number): void {
+  const p = w.player, ps = w.ps;
+  if (ps.deathState === 'alive') {
+    if (p.dead || p.health <= 0) {
+      ps.deathState = 'wasted';
+      ps.deathTimer = 0;
+    } else return;
+  }
+  if (ps.deathTimer <= 0) {
+    ps.deathTimer = 3;
+    w.bus.emit(ps.deathState === 'wasted' ? 'wasted' : 'busted', {});
+    if (p.vehicle) Object.assign(p.vehicle, { throttle: 0, brake: 1, steer: 0 });
+    return;
+  }
+  ps.deathTimer -= dt;
+  if (ps.deathTimer <= 0) respawnPlayer(w, ps.deathState === 'wasted' ? 'wasted' : 'busted');
+}
+
+export function respawnPlayer(w: World, kind: 'wasted' | 'busted'): void {
+  const p = w.player, ps = w.ps;
+  if (p.vehicle) { p.vehicle.driver = null; p.vehicle = null; }
+  const l = nearestLandmark(w.city, kind === 'wasted' ? 'hospital' : 'police', p.x, p.y);
+  const at = l ? findWalkableNear(w.city, l.tx * TILE + TILE / 2, l.ty * TILE + TILE / 2) : { x: w.city.startX, y: w.city.startY };
+  Object.assign(p, { x: at.x, y: at.y, vx: 0, vy: 0, dead: false, health: 100, armor: 0, burning: 0, knocked: 0, shocked: 0 });
+  p.ai.mode = 'idle';
+  clearWanted(w);
+  ps.deathState = 'alive';
+  ps.deathTimer = 0;
+  w.peds.each(q => { if (q !== p && LAW_KINDS.has(q.kind)) q.persistent = false; });
+  w.vehicles.each(v => { if (LAW_ROLES.has(v.def.role) && v.driver !== p) { v.persistent = false; if (v.ai.mode === 'chase') v.ai.mode = 'cruise'; } });
+  if (kind === 'wasted') {
+    ps.lives--;
+    ps.weapons = { fists: Infinity };
+    ps.current = 'fists';
+    ps.multiplier = Math.max(1, ps.multiplier - 1);
+    if (ps.lives <= 0) { gameOver(w); return; }
+  } else if (ps.jailFree) {
+    ps.jailFree = false;
+    w.bus.emit('message', { text: 'Get Outta Jail Free card used!', seconds: 3 });
+  } else {
+    ps.weapons = { fists: Infinity };
+    ps.current = 'fists';
+    ps.multiplier = 1;
+    ps.score = Math.max(0, ps.score - Math.floor(ps.score * 0.1));
+  }
+  w.bus.emit('respawn', { kind });
 }

@@ -10,7 +10,8 @@ import { ParkedCars, Population } from '../sim/spawner';
 import { driveAI } from '../sim/ai/traffic';
 import { pedAI, panic } from '../sim/ai/pedestrian';
 import { generateCity } from '../world/citygen';
-import { controlPlayer } from './player';
+import { controlPlayer, deathSystem } from './player';
+import { shopsSystem } from './shops';
 import { Pickups } from './pickups';
 import { registerScoring } from './score';
 import { registerCrimes, wantedSystem } from './wanted';
@@ -40,6 +41,8 @@ export function registerCoreSystems(w: World): void {
   w.addSystem('pickups', (_w, dt) => pickups.update(dt));
   w.addSystem('wanted', wantedSystem);
   w.addSystem('police', policeSystem);
+  w.addSystem('shops', shopsSystem);
+  w.addSystem('death', deathSystem);
   registerScoring(w);
   registerCrimes(w);
   const parked = new ParkedCars(w), population = new Population(w);

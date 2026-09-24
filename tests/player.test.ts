@@ -62,8 +62,9 @@ test('moving cancels an enter approach', () => {
 test('walking into water drowns the player', () => {
   const c = testCity(40); for (let y = 0; y < 40; y++) for (let x = 12; x < 40; x++) setTile(c, x, y, T.Water, 0);
   const w = world(c); const i = idle(); i.accel = 1;
+  let wasted = 0; w.bus.on('wasted', () => wasted++);
   for (let n = 0; n < 240; n++) w.step(i, DT);
-  expect(w.player.health).toBeLessThanOrEqual(0);
+  expect(wasted).toBe(1);
 });
 test('spawn caps are separate for parked and moving vehicles', () => {
   const w = world(testCity(100));
