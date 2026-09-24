@@ -121,7 +121,9 @@ function pause() {
   showPause({
     settings,
     onResume: resume,
-    onQuit: () => { save(); openTitle(); },
+    onQuit: () => { save(); if (import.meta.env.DEV) addEventListener('keydown', e => { if (e.code === 'F3') renderer.debug.visible = !renderer.debug.visible; });
+
+openTitle(); },
     onSettings: s => { settings = s; saveSettings(); audio.setVolumes(s); },
   });
 }
@@ -150,7 +152,9 @@ function step(dt: number) {
         radio.setStation(settings.station);
         renderer.hud.radio = { text: radio.name(), t: 2 };
       }
+      const t0 = performance.now();
       w.step(inp, dt);
+      renderer.debug.simMs = renderer.debug.simMs * 0.9 + (performance.now() - t0) * 0.1;
       w.ps.playTime += dt;
       saveTimer -= dt;
       if (saveTimer <= 0) { saveTimer = AUTOSAVE_S; save(); }
@@ -199,5 +203,7 @@ function expose(s: Session) {
   g.__w = s.world;
   g.__game = { get screen() { return screen; }, renderer, input, audio };
 }
+
+if (import.meta.env.DEV) addEventListener('keydown', e => { if (e.code === 'F3') renderer.debug.visible = !renderer.debug.visible; });
 
 openTitle();

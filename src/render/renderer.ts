@@ -8,6 +8,7 @@ import { drawPeds, drawPhones, drawPickups, drawProjectiles, drawVehicles } from
 import { HudState, drawHud } from './hud';
 import { drawMap } from './mapscreen';
 import { drawText } from './font';
+import { DebugOverlay } from './debug';
 import { makeIcons, type Icons } from './sprites/icons';
 import { drawBuildings } from './buildings3d';
 import { CarSprites } from './sprites/cars';
@@ -26,6 +27,7 @@ export class Renderer {
   private cars = new CarSprites();
   readonly particles = new Particles();
   readonly hud = new HudState();
+  readonly debug = new DebugOverlay();
   private icons: Icons = makeIcons();
   private last = performance.now();
   /** Title screen: slow camera drift over the city, no player or HUD. */
@@ -122,6 +124,10 @@ export class Renderer {
     this.hud.timer = f ? f.timer : m && m.spec.timeLimit > 0 ? m.timer : null;
     this.hud.counter = f ? `Kills ${f.kills}/${f.need}` : m?.counter ?? null;
     drawHud(ctx, w, this.hud, this.icons, cam, now / 1000);
+    this.ground.prefetch(cam, v ? v.vx : p.vx, v ? v.vy : p.vy);
+    this.debug.frame(dt);
+    this.debug.renderMs = this.debug.renderMs * 0.9 + (performance.now() - now) * 0.1;
+    this.debug.draw(ctx, w, this.ground.cachedCount, cam.viewH);
   }
 
   /** Smoke from damaged cars, flames from anything burning. */

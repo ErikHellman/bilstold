@@ -7,7 +7,7 @@ import type { TileTextures } from './sprites/tiles';
 
 const CHUNK = 16;
 const PX = CHUNK * TILE;
-const MAX_CHUNKS = 16;
+const MAX_CHUNKS = 24;
 const MAX_DECALS = 400;
 
 export type DecalKind = 'blood' | 'skid' | 'scorch' | 'oil';
@@ -44,6 +44,18 @@ export class GroundCache {
         const x0 = Math.round(a.x), y0 = Math.round(a.y);
         ctx.drawImage(this.chunk(cx, cy), x0, y0, Math.round(b.x) - x0, Math.round(b.y) - y0);
       }
+  }
+
+  /** Renders at most one not-yet-cached chunk just ahead of the camera, so crossing chunk borders never renders several at once. */
+  prefetch(cam: Camera, vx: number, vy: number): void {
+    const r = cam.visibleRect();
+    const n = Math.ceil(this.city.size / CHUNK);
+    const lead = 0.6;
+    const x0 = Math.min(r.x0, r.x0 + vx * lead) - PX / 2, x1 = Math.max(r.x1, r.x1 + vx * lead) + PX / 2;
+    const y0 = Math.min(r.y0, r.y0 + vy * lead) - PX / 2, y1 = Math.max(r.y1, r.y1 + vy * lead) + PX / 2;
+    for (let cy = Math.max(0, Math.floor(y0 / PX)); cy <= Math.min(n - 1, Math.floor(y1 / PX)); cy++)
+      for (let cx = Math.max(0, Math.floor(x0 / PX)); cx <= Math.min(n - 1, Math.floor(x1 / PX)); cx++)
+        if (!this.chunks.has(this.key(cx, cy))) { this.chunk(cx, cy); return; }
   }
 
   paintDecal(kind: DecalKind, x: number, y: number, angle: number, r: number): void {

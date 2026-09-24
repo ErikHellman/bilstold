@@ -8,7 +8,7 @@
     "noUnusedParameters": true,
     "isolatedModules": true,
     "lib": ["ES2022", "DOM", "DOM.Iterable"],
-    "types": ["vitest/globals", "vite/client"],
+    "types": ["vitest/globals", "vite/client", "node"],
     "skipLibCheck": true,
     "noEmit": true
   },
