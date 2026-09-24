@@ -66,3 +66,47 @@ export function drawVehicles(ctx: Ctx, cam: Camera, w: World, cars: CarSprites, 
     }
   }
 }
+
+export function drawProjectiles(ctx: Ctx, cam: Camera, w: World) {
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  const z = cam.zoom;
+  const items = w.projectiles.items;
+  for (let i = 0; i < items.length; i++) {
+    const p = items[i];
+    if (!p.active || !inView(cam, p.x, p.y, 10)) continue;
+    cam.worldToScreen(p.x, p.y, tmp);
+    const sp = Math.hypot(p.vx, p.vy) || 1;
+    switch (p.kind) {
+      case 'bullet': {
+        ctx.strokeStyle = 'rgba(255,240,170,0.9)';
+        ctx.lineWidth = Math.max(1, z);
+        ctx.beginPath();
+        ctx.moveTo(tmp.x, tmp.y);
+        ctx.lineTo(tmp.x - (p.vx / sp) * 8 * z, tmp.y - (p.vy / sp) * 8 * z);
+        ctx.stroke();
+        break;
+      }
+      case 'flame':
+        ctx.fillStyle = Math.random() < 0.5 ? 'rgba(255,140,0,0.8)' : 'rgba(255,220,60,0.8)';
+        ctx.fillRect(tmp.x - 3 * z, tmp.y - 3 * z, 6 * z, 6 * z);
+        break;
+      case 'thrown':
+        ctx.fillStyle = p.weapon === 'grenade' ? '#3d5a2a' : '#a0522d';
+        ctx.fillRect(tmp.x - 2 * z, tmp.y - 2 * z, 4 * z, 4 * z);
+        break;
+      default:
+        ctx.fillStyle = '#ddd';
+        ctx.fillRect(tmp.x - 3 * z, tmp.y - 2 * z, 6 * z, 4 * z);
+        ctx.fillStyle = 'rgba(255,160,40,0.9)';
+        ctx.fillRect(tmp.x - (p.vx / sp) * 6 * z - 2, tmp.y - (p.vy / sp) * 6 * z - 2, 4, 4);
+    }
+  }
+  const hz = w.hazards.items;
+  for (let i = 0; i < hz.length; i++) {
+    const h = hz[i];
+    if (!h.active || h.kind !== 'mine' || !inView(cam, h.x, h.y, 10)) continue;
+    cam.worldToScreen(h.x, h.y, tmp);
+    ctx.fillStyle = '#222'; ctx.fillRect(tmp.x - 4 * z, tmp.y - 4 * z, 8 * z, 8 * z);
+    ctx.fillStyle = Math.floor(w.time * 4) % 2 ? '#f33' : '#600'; ctx.fillRect(tmp.x - 1, tmp.y - 1, 2, 2);
+  }
+}

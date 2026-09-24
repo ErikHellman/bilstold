@@ -1,6 +1,8 @@
 import type { World } from '../sim/world';
 import type { Vehicle } from '../sim/types';
 import { doorPoint, forwardSpeed } from '../sim/vehicle';
+import { fireWeapon } from '../sim/combat';
+import { FOOT_WEAPONS, type WeaponId } from './data/weapons';
 import { findWalkableNear, tileAtWorld } from '../world/query';
 import { T, isWalkable } from '../world/tiles';
 
@@ -19,6 +21,7 @@ export function controlPlayer(w: World, dt: number): void {
   if (v) {
     v.throttle = inp.accel; v.brake = inp.brake; v.steer = inp.steer; v.handbrake = inp.handbrake;
     p.x = v.x; p.y = v.y; p.angle = v.angle;
+    if (inp.fire && v.carWeapon) fireWeapon(w, p, v.carWeapon, v);
     if (inp.pressed.has('enter')) playerExit(w);
     return;
   }
@@ -43,7 +46,21 @@ export function controlPlayer(w: World, dt: number): void {
   p.vx = Math.cos(p.angle) * sp;
   p.vy = Math.sin(p.angle) * sp;
   p.anim += Math.abs(sp) * dt;
+  if (inp.pressed.has('weaponNext')) cycleWeapon(w, 1);
+  if (inp.pressed.has('weaponPrev')) cycleWeapon(w, -1);
+  if (inp.fire) {
+    fireWeapon(w, p, w.ps.current);
+    if ((w.ps.weapons[w.ps.current] ?? 0) <= 0) cycleWeapon(w, 1);
+  }
   if (inp.pressed.has('enter')) playerEnterNearest(w);
+}
+
+/** Next/previous owned foot weapon with ammo; fists are always available. */
+export function cycleWeapon(w: World, dir: 1 | -1): void {
+  const owned = FOOT_WEAPONS.filter(id => (w.ps.weapons[id] ?? 0) > 0);
+  if (!owned.length) { w.ps.current = 'fists'; return; }
+  const i = owned.indexOf(w.ps.current as WeaponId);
+  w.ps.current = owned[(i + dir + owned.length) % owned.length];
 }
 
 function nearerDoor(v: Vehicle, x: number, y: number) {

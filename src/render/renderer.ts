@@ -4,7 +4,7 @@ import type { World } from '../sim/world';
 import { speedOf } from '../sim/vehicle';
 import { Camera } from './camera';
 import { ctx2d, type Ctx } from './canvas';
-import { drawPeds, drawVehicles } from './entities';
+import { drawPeds, drawProjectiles, drawVehicles } from './entities';
 import { drawBuildings } from './buildings3d';
 import { CarSprites } from './sprites/cars';
 import { GroundCache } from './groundcache';
@@ -71,6 +71,7 @@ export class Renderer {
     drawPeds(ctx, cam, w, this.peds, true);
     drawVehicles(ctx, cam, w, this.cars, this.peds);
     drawPeds(ctx, cam, w, this.peds, false);
+    drawProjectiles(ctx, cam, w);
     cam.apply(ctx);
     drawBuildings(ctx, cam, w.city);
     ctx.setTransform(1, 0, 0, 1, 0, 0);

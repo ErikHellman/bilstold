@@ -82,7 +82,9 @@ export class World {
   spawnPed(kind: PedKind, x: number, y: number, angle: number): Ped | null {
     const p = this.peds.spawn();
     if (!p) return null;
-    return resetPed(p, kind, x, y, angle, skinFor(kind, -1, this.rng));
+    resetPed(p, kind, x, y, angle, skinFor(kind, -1, this.rng));
+    this.pedGrid.insert(p); // visible to proximity queries before the next rebuild
+    return p;
   }
 
   countVehicles(parked: boolean): number {
@@ -97,6 +99,7 @@ export class World {
     if (!v) return null;
     resetVehicle(v, model, x, y, angle, color);
     v.parked = parked;
+    this.vehGrid.insert(v);
     return v;
   }
 
