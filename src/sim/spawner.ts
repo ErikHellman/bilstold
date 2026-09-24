@@ -156,13 +156,14 @@ export class Population {
       const x = tx * TILE + TILE / 2, y = ty * TILE + TILE / 2;
       if (w.nearbyVehicles(x, y, 70).length) continue;
       const gang = c.gangs[c.gangZone[i]];
-      const gangCar = gang && w.rng() < 0.2;
-      const model = gangCar ? gang.carModel : pickCivModel(w.rng, TRAFFIC_BOOST[district]);
+      const patrol = w.rng() < 0.03;
+      const gangCar = !patrol && gang && w.rng() < 0.2;
+      const model = patrol ? 'police' : gangCar ? gang.carModel : pickCivModel(w.rng, TRAFFIC_BOOST[district]);
       const color = gangCar ? 0 : Math.floor(w.rng() * VEHICLES[model].colors.length);
       const angle = DIR_ANGLE[flags];
       const v = w.spawnVehicle(model, x, y, angle, color, false);
       if (!v) return;
-      const driver = w.spawnPed(gangCar ? 'gang' : 'civ', x, y, angle);
+      const driver = w.spawnPed(patrol ? 'cop' : gangCar ? 'gang' : 'civ', x, y, angle);
       if (!driver) { w.removeVehicle(v); return; }
       if (gangCar) { driver.gang = gang.id; driver.skin = 12 + gang.id; }
       driver.vehicle = v;
@@ -189,9 +190,11 @@ export class Population {
       let kind: PedKind = r < 0.8 ? 'civ' : r < 0.9 ? (district === D.Downtown ? 'businessman' : 'civ') : r < 0.95 ? 'elder' : 'criminal';
       const gangMember = c.gangs.length > 0 && w.rng() < 0.12;
       if (gangMember) kind = 'gang';
+      else if (w.rng() < 0.03) kind = 'cop';
       const p = w.spawnPed(kind, tx * TILE + TILE / 2 + (x % 8) - 4, ty * TILE + TILE / 2 + (y % 8) - 4, 0);
       if (!p) return;
       if (gangMember) { p.gang = gangZone; p.skin = 12 + gangZone; }
+      if (kind === 'cop') { p.weapon = 'pistol'; p.ammo = -1; }
       p.ai.dir = DIRS[Math.floor(w.rng() * 4)];
       p.ai.timer = 1 + w.rng() * 5;
       return;

@@ -83,6 +83,7 @@ function meleeHit(w: World, shooter: Ped, def: WeaponDef) {
   const t = coneTarget(w, shooter, def.range + 6, null);
   if (!t) return;
   damagePed(w, t, def.damage, shooter, 'fists');
+  if (shooter === w.player) w.bus.emit('crime', { x: t.x, y: t.y, severity: 1, victim: t });
   if (!t.dead) {
     t.knocked = 0.4;
     t.vx = Math.cos(shooter.angle) * 80;
@@ -143,8 +144,14 @@ export function fireWeapon(w: World, shooter: Ped, weapon: WeaponId, vehicle?: V
       return true;
   }
   w.bus.emit('shot', { x: ox, y: oy, weapon, byPlayer: isPlayer });
+  if (isPlayer && w.time - (lastShotCrime.get(w) ?? -9) > 1) {
+    lastShotCrime.set(w, w.time);
+    w.bus.emit('crime', { x: ox, y: oy, severity: def.severity, victim: null });
+  }
   return true;
 }
+
+const lastShotCrime = new WeakMap<World, number>();
 
 function pointInVehicle(v: Vehicle, x: number, y: number, pad = 0): boolean {
   const c = Math.cos(v.angle), s = Math.sin(v.angle);

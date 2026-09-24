@@ -13,6 +13,8 @@ import { generateCity } from '../world/citygen';
 import { controlPlayer } from './player';
 import { Pickups } from './pickups';
 import { registerScoring } from './score';
+import { registerCrimes, wantedSystem } from './wanted';
+import { policeSystem } from '../sim/ai/police';
 
 export interface Session { world: World; seedString: string }
 
@@ -36,7 +38,10 @@ export function registerCoreSystems(w: World): void {
   w.addSystem('effects', effectsSystem);
   const pickups = new Pickups(w);
   w.addSystem('pickups', (_w, dt) => pickups.update(dt));
+  w.addSystem('wanted', wantedSystem);
+  w.addSystem('police', policeSystem);
   registerScoring(w);
+  registerCrimes(w);
   const parked = new ParkedCars(w), population = new Population(w);
   w.addSystem('spawner', (_w, dt) => { parked.update(dt); population.update(dt); });
   w.bus.on('shot', e => panic(w, e.x, e.y, 220));

@@ -92,6 +92,8 @@ export function playerEnterNearest(w: World): boolean {
 function completeEnter(w: World, v: Vehicle) {
   const p = w.player;
   const d = v.driver;
+  const lawCar = ['police', 'swat', 'fbi', 'army'].includes(v.def.role);
+  w.bus.emit('crime', { x: v.x, y: v.y, severity: lawCar ? 3 : 1, victim: lawCar ? v : d });
   if (d && d !== p) {
     d.vehicle = null;
     v.driver = null;

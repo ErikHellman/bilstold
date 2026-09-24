@@ -12,6 +12,7 @@ export function explode(w: World, x: number, y: number, r: number, owner: Ped | 
   if (e) Object.assign(e, { x, y, r, t: 0, owner });
   w.bus.emit('explosion', { x, y, r });
   w.bus.emit('scorch', { x, y, r: r * 0.45 });
+  if (owner === w.player) w.bus.emit('crime', { x, y, severity: 4, victim: null });
   for (const p of w.nearbyPeds(x, y, r * 1.5)) {
     if (p.vehicle) continue;
     const d = Math.hypot(p.x - x, p.y - y);
