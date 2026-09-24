@@ -6,6 +6,8 @@ import { Camera } from './camera';
 import { ctx2d, type Ctx } from './canvas';
 import { drawPeds, drawPhones, drawPickups, drawProjectiles, drawVehicles } from './entities';
 import { HudState, drawHud } from './hud';
+import { drawMap } from './mapscreen';
+import { drawText } from './font';
 import { makeIcons, type Icons } from './sprites/icons';
 import { drawBuildings } from './buildings3d';
 import { CarSprites } from './sprites/cars';
@@ -26,6 +28,9 @@ export class Renderer {
   readonly hud = new HudState();
   private icons: Icons = makeIcons();
   private last = performance.now();
+  /** Title screen: slow camera drift over the city, no player or HUD. */
+  attract = false;
+  showMap = false;
   private unsub: (() => void)[] = [];
 
   constructor(readonly canvas: HTMLCanvasElement) {
@@ -84,21 +89,33 @@ export class Renderer {
     ctx.fillStyle = '#000';
     ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
     if (!w || !this.ground) return;
+    if (this.showMap) { drawMap(ctx, w, cam.viewW, cam.viewH, now / 1000); return; }
     const p = w.player, v = p.vehicle;
-    cam.follow(p.x, p.y, v ? v.vx : p.vx, v ? v.vy : p.vy, v ? speedOf(v) : 0, dt);
+    if (this.attract) {
+      const t = now / 1000;
+      cam.follow(w.city.startX + Math.sin(t * 0.05) * 1400, w.city.startY + Math.sin(t * 0.037) * 1100, 0, 0, 0, dt);
+      cam.zoom = 0.75;
+    } else cam.follow(p.x, p.y, v ? v.vx : p.vx, v ? v.vy : p.vy, v ? speedOf(v) : 0, dt);
     cam.apply(ctx);
     this.ground.draw(ctx, cam);
     drawPickups(ctx, cam, w, this.icons);
     drawPhones(ctx, cam, w);
     drawPeds(ctx, cam, w, this.peds, true);
     drawVehicles(ctx, cam, w, this.cars, this.peds);
-    drawPeds(ctx, cam, w, this.peds, false);
+    drawPeds(ctx, cam, w, this.peds, false, this.attract ? p : null);
     drawProjectiles(ctx, cam, w);
     this.emitAmbient(w, dt);
     this.particles.update(dt);
     this.particles.draw(ctx, cam);
     cam.apply(ctx);
     drawBuildings(ctx, cam, w.city);
+    if (this.attract) {
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.fillStyle = 'rgba(0,0,0,0.35)';
+      ctx.fillRect(0, 0, cam.viewW, cam.viewH);
+      drawText(ctx, 'BILSTÖLD', cam.viewW / 2, 26, '#f1c40f', 5, 'center');
+      return;
+    }
     this.hud.update(w, dt);
     const m = w.mission, f = w.frenzy;
     this.hud.target = m?.target ?? null;

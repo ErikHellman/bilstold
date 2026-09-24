@@ -29,11 +29,11 @@ export function inView(cam: Camera, x: number, y: number, margin: number) {
   return x > r.x0 - margin && x < r.x1 + margin && y > r.y0 - margin && y < r.y1 + margin;
 }
 
-export function drawPeds(ctx: Ctx, cam: Camera, w: World, sprites: PedSprites, dead: boolean) {
+export function drawPeds(ctx: Ctx, cam: Camera, w: World, sprites: PedSprites, dead: boolean, skip: Ped | null = null) {
   const items = w.peds.items;
   for (let i = 0; i < items.length; i++) {
     const p = items[i];
-    if (!p.active || p.vehicle || p.dead !== dead || !inView(cam, p.x, p.y, 16)) continue;
+    if (!p.active || p === skip || p.vehicle || p.dead !== dead || !inView(cam, p.x, p.y, 16)) continue;
     const frames = sprites[p.skin] ?? sprites[1];
     drawRotated(ctx, cam, frames[pedFrame(p)], p.x, p.y, p.angle);
   }

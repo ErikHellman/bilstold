@@ -1,4 +1,9 @@
 import { hashString, normalizeSeed } from '../core/rng';
+
+/** A player-entered seed, trimmed and normalised; empty means random. */
+export function resolveSeed(input: string, fallback: () => string): string {
+  return normalizeSeed(input) || fallback();
+}
 import { stepPedMovement, killPed } from '../sim/ped';
 import { resolveVehiclePair, stepVehicle } from '../sim/vehicle';
 import { pedVsVehicle } from '../sim/collision';
