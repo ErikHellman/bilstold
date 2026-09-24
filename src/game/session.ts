@@ -16,6 +16,10 @@ import { Pickups } from './pickups';
 import { registerScoring } from './score';
 import { registerCrimes, wantedSystem } from './wanted';
 import { policeSystem } from '../sim/ai/police';
+import { gangSystem } from '../sim/ai/gang';
+import { criminalSystem } from '../sim/ai/criminal';
+import { emergencySystem } from '../sim/ai/emergency';
+import { registerGangs } from './gangs';
 
 export interface Session { world: World; seedString: string }
 
@@ -41,10 +45,14 @@ export function registerCoreSystems(w: World): void {
   w.addSystem('pickups', (_w, dt) => pickups.update(dt));
   w.addSystem('wanted', wantedSystem);
   w.addSystem('police', policeSystem);
+  w.addSystem('gangs', gangSystem);
+  w.addSystem('criminals', criminalSystem);
+  w.addSystem('emergency', emergencySystem);
   w.addSystem('shops', shopsSystem);
   w.addSystem('death', deathSystem);
   registerScoring(w);
   registerCrimes(w);
+  registerGangs(w);
   const parked = new ParkedCars(w), population = new Population(w);
   w.addSystem('spawner', (_w, dt) => { parked.update(dt); population.update(dt); });
   w.bus.on('shot', e => panic(w, e.x, e.y, 220));

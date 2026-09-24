@@ -31,7 +31,12 @@ export function damagePed(w: World, p: Ped, amount: number, by: Ped | null, weap
     killPed(w, p, by, weapon);
     return;
   }
-  if (p !== w.player && by && CALM_KINDS.has(p.kind)) Object.assign(p.ai, { mode: 'flee', tx: by.x, ty: by.y, timer: 6 });
+  if (p === w.player || !by || by === p) return;
+  if (CALM_KINDS.has(p.kind)) Object.assign(p.ai, { mode: 'flee', tx: by.x, ty: by.y, timer: 6 });
+  else if (p.kind === 'gang' || p.kind === 'criminal') {
+    if (p.ai.mode !== 'attack') Object.assign(p.ai, { mode: 'attack', target: by, timer: 20 });
+    if (p.weapon === 'fists' && p.kind === 'gang') { p.weapon = 'pistol'; p.ammo = -1; }
+  }
 }
 
 export function damageVehicleBy(w: World, v: Vehicle, amount: number, by: Ped | null): void {

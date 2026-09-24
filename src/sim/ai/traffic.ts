@@ -118,6 +118,29 @@ function approachingJunction(w: World, v: Vehicle): boolean {
   return false;
 }
 
+/** Lane following that prefers turns towards a target. */
+export function laneTowards(w: World, v: Vehicle, tx: number, ty: number) {
+  const c = w.city, size = c.size, ai = v.ai;
+  const cx = Math.floor(v.x / TILE), cy = Math.floor(v.y / TILE), ti = cy * size + cx;
+  if (cx < 0 || cy < 0 || cx >= size || cy >= size || c.tiles[ti] !== T.Road) return { x: tx, y: ty };
+  if (ti !== ai.lastTile) {
+    const f = c.roadDir[ti];
+    let cands = DIRS.filter(d => (f & d) && d !== OPPOSITE[ai.dir]);
+    if (!cands.length) cands = DIRS.filter(d => f & d);
+    let best = ai.dir, bd = Infinity;
+    for (const d of cands) {
+      const nx = (cx + DIR_VEC[d][0] * 3 + 0.5) * TILE, ny = (cy + DIR_VEC[d][1] * 3 + 0.5) * TILE;
+      const dist = Math.hypot(tx - nx, ty - ny) + (d === ai.dir ? -20 : 0) + w.rng() * 30;
+      if (dist < bd) { bd = dist; best = d; }
+    }
+    ai.dir = best;
+    ai.lastTile = ti;
+    ai.turnedHere = ((f & H) && (f & V)) ? true : false;
+  }
+  const [dx, dy] = DIR_VEC[ai.dir] ?? [1, 0];
+  return { x: (cx + dx + 0.5) * TILE, y: (cy + dy + 0.5) * TILE };
+}
+
 type DriveFn = (w: World, v: Vehicle, dt: number) => void;
 /** Handlers for other drive modes are registered by later modules (police, emergency, ...). */
 export const DRIVE_AI: Partial<Record<DriveMode, DriveFn>> = {};

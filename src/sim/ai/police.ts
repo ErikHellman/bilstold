@@ -5,13 +5,13 @@ import type { WeaponId } from '../../game/data/weapons';
 import { LAW_KINDS, LAW_ROLES } from '../../game/wanted';
 import { hasLineOfSight } from '../../world/los';
 import { isSolidWorld, tileAtWorld } from '../../world/query';
-import { T, DIR, DIRS, DIR_VEC, DIR_ANGLE, OPPOSITE } from '../../world/tiles';
+import { T, DIR, DIRS, DIR_ANGLE } from '../../world/tiles';
 import { fireWeapon } from '../combat';
 import type { Ped, PedKind, Vehicle } from '../types';
 import { forwardSpeed, speedOf } from '../vehicle';
 import type { World } from '../world';
 import { PED_AI } from './pedestrian';
-import { DRIVE_AI, obstacleAhead, steerTowards } from './traffic';
+import { DRIVE_AI, laneTowards, obstacleAhead, steerTowards } from './traffic';
 
 type Unit = 'foot' | 'police' | 'swat' | 'fbi' | 'tank';
 /** Desired chasing units per wanted level. */
@@ -20,7 +20,7 @@ const DESIRED: Record<number, Partial<Record<Unit, number>>> = {
   5: { foot: 2, police: 2, swat: 2, fbi: 2 }, 6: { foot: 2, swat: 2, fbi: 2, tank: 2 },
 };
 const UNIT_MODEL: Record<Exclude<Unit, 'foot'>, VehicleModelId> = { police: 'police', swat: 'swat', fbi: 'fbi', tank: 'tank' };
-const H = DIR.E | DIR.W, V = DIR.N | DIR.S;
+const H = DIR.E | DIR.W;
 const SINGLE = new Set<number>([DIR.N, DIR.E, DIR.S, DIR.W]);
 
 interface PoliceState { spawnTimer: number; roadblockTimer: number; lastPlayerShot: number; slowTime: number }
@@ -123,29 +123,6 @@ const targetOf = (w: World, t: Ped | Vehicle | null): { x: number; y: number; vx
   const src = p.vehicle ?? p;
   return { x: src.x, y: src.y, vx: src.vx, vy: src.vy };
 };
-
-/** Lane following that prefers turns towards a target. */
-function laneTowards(w: World, v: Vehicle, tx: number, ty: number) {
-  const c = w.city, size = c.size, ai = v.ai;
-  const cx = Math.floor(v.x / TILE), cy = Math.floor(v.y / TILE), ti = cy * size + cx;
-  if (cx < 0 || cy < 0 || cx >= size || cy >= size || c.tiles[ti] !== T.Road) return { x: tx, y: ty };
-  if (ti !== ai.lastTile) {
-    const f = c.roadDir[ti];
-    let cands = DIRS.filter(d => (f & d) && d !== OPPOSITE[ai.dir]);
-    if (!cands.length) cands = DIRS.filter(d => f & d);
-    let best = ai.dir, bd = Infinity;
-    for (const d of cands) {
-      const nx = (cx + DIR_VEC[d][0] * 3 + 0.5) * TILE, ny = (cy + DIR_VEC[d][1] * 3 + 0.5) * TILE;
-      const dist = Math.hypot(tx - nx, ty - ny) + (d === ai.dir ? -20 : 0) + w.rng() * 30;
-      if (dist < bd) { bd = dist; best = d; }
-    }
-    ai.dir = best;
-    ai.lastTile = ti;
-    ai.turnedHere = ((f & H) && (f & V)) ? true : false;
-  }
-  const [dx, dy] = DIR_VEC[ai.dir] ?? [1, 0];
-  return { x: (cx + dx + 0.5) * TILE, y: (cy + dy + 0.5) * TILE };
-}
 
 DRIVE_AI.chase = (w, v, dt) => {
   const level = w.ps.wanted.level;
