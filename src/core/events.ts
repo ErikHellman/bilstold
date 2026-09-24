@@ -48,4 +48,5 @@ export interface GameEvents {
   missionEnd: { success: boolean; reward: number };
   phoneRing: { x: number; y: number };
   cityComplete: { index: number };
+  frenzyStart: {};
 }

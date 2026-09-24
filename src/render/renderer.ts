@@ -4,7 +4,9 @@ import type { World } from '../sim/world';
 import { speedOf } from '../sim/vehicle';
 import { Camera } from './camera';
 import { ctx2d, type Ctx } from './canvas';
-import { drawPeds, drawProjectiles, drawVehicles } from './entities';
+import { drawPeds, drawPickups, drawProjectiles, drawVehicles } from './entities';
+import { HudState, drawHud } from './hud';
+import { makeIcons, type Icons } from './sprites/icons';
 import { drawBuildings } from './buildings3d';
 import { CarSprites } from './sprites/cars';
 import { Particles } from './particles';
@@ -21,6 +23,8 @@ export class Renderer {
   private peds: PedSprites = makePedSprites();
   private cars = new CarSprites();
   readonly particles = new Particles();
+  readonly hud = new HudState();
+  private icons: Icons = makeIcons();
   private last = performance.now();
   private unsub: (() => void)[] = [];
 
@@ -47,6 +51,7 @@ export class Renderer {
     for (const u of this.unsub) u();
     this.unsub = [];
     this.world = w;
+    this.hud.attach(w);
     const g = new GroundCache(w.city, this.tiles);
     this.ground = g;
     this.cam.snap(w.player.x, w.player.y);
@@ -82,6 +87,7 @@ export class Renderer {
     cam.follow(p.x, p.y, v ? v.vx : p.vx, v ? v.vy : p.vy, v ? speedOf(v) : 0, dt);
     cam.apply(ctx);
     this.ground.draw(ctx, cam);
+    drawPickups(ctx, cam, w, this.icons);
     drawPeds(ctx, cam, w, this.peds, true);
     drawVehicles(ctx, cam, w, this.cars, this.peds);
     drawPeds(ctx, cam, w, this.peds, false);
@@ -91,7 +97,8 @@ export class Renderer {
     this.particles.draw(ctx, cam);
     cam.apply(ctx);
     drawBuildings(ctx, cam, w.city);
-    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    this.hud.update(w, dt);
+    drawHud(ctx, w, this.hud, this.icons, cam, now / 1000);
   }
 
   /** Smoke from damaged cars, flames from anything burning. */

@@ -11,6 +11,8 @@ import { driveAI } from '../sim/ai/traffic';
 import { pedAI, panic } from '../sim/ai/pedestrian';
 import { generateCity } from '../world/citygen';
 import { controlPlayer } from './player';
+import { Pickups } from './pickups';
+import { registerScoring } from './score';
 
 export interface Session { world: World; seedString: string }
 
@@ -32,6 +34,9 @@ export function registerCoreSystems(w: World): void {
   w.addSystem('peds', pedsSystem);
   w.addSystem('combat', combatSystem);
   w.addSystem('effects', effectsSystem);
+  const pickups = new Pickups(w);
+  w.addSystem('pickups', (_w, dt) => pickups.update(dt));
+  registerScoring(w);
   const parked = new ParkedCars(w), population = new Population(w);
   w.addSystem('spawner', (_w, dt) => { parked.update(dt); population.update(dt); });
   w.bus.on('shot', e => panic(w, e.x, e.y, 220));

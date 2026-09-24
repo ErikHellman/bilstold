@@ -56,5 +56,7 @@ export interface PlayerState {
   current: WeaponId;
   wanted: Wanted; respect: number[]; powerups: PowerUps; jailFree: boolean;
   missionsDone: number; kills: number; playTime: number;
+  /** Spot ids of one-shot pickups already taken in this city. */
+  collected: number[];
   deathState: 'alive' | 'wasted' | 'busted'; deathTimer: number;
 }

@@ -18,7 +18,7 @@ export function newPlayerState(): PlayerState {
     weapons: { fists: Infinity }, current: 'fists',
     wanted: { level: 0, heat: 0, unseen: 0 }, respect: [0, 0, 0],
     powerups: { doubleDamage: 0, fastReload: 0, invuln: 0, electroFingers: 0 }, jailFree: false,
-    missionsDone: 0, kills: 0, playTime: 0, deathState: 'alive', deathTimer: 0,
+    missionsDone: 0, kills: 0, playTime: 0, collected: [], deathState: 'alive', deathTimer: 0,
   };
 }
 

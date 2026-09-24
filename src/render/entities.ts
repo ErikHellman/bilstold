@@ -4,6 +4,7 @@ import type { Camera } from './camera';
 import type { Canvas, Ctx } from './canvas';
 import { PED_FRAME, type PedSprites } from './sprites/peds';
 import type { CarSprites } from './sprites/cars';
+import type { Icons } from './sprites/icons';
 
 const tmp = { x: 0, y: 0 };
 
@@ -113,5 +114,20 @@ export function drawProjectiles(ctx: Ctx, cam: Camera, w: World) {
     }
     ctx.fillStyle = '#222'; ctx.fillRect(tmp.x - 4 * z, tmp.y - 4 * z, 8 * z, 8 * z);
     ctx.fillStyle = Math.floor(w.time * 4) % 2 ? '#f33' : '#600'; ctx.fillRect(tmp.x - 1, tmp.y - 1, 2, 2);
+  }
+}
+
+export function drawPickups(ctx: Ctx, cam: Camera, w: World, icons: Icons) {
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  const items = w.pickups.items, z = cam.zoom;
+  for (let i = 0; i < items.length; i++) {
+    const p = items[i];
+    if (!p.active || !inView(cam, p.x, p.y, 16)) continue;
+    cam.worldToScreen(p.x, p.y, tmp);
+    const bob = Math.sin(w.time * 4 + p.id) * 1.5;
+    const s = 16 * z;
+    ctx.fillStyle = 'rgba(0,0,0,0.3)';
+    ctx.fillRect(tmp.x - s / 2 + 2, tmp.y - s / 2 + 3, s, s);
+    ctx.drawImage(icons.pickup[p.kind], Math.round(tmp.x - s / 2), Math.round(tmp.y - s / 2 + bob), s, s);
   }
 }
