@@ -9,3 +9,12 @@ export function gameOver(w: World): void {
   w.bus.emit('message', { text: 'GAME OVER', seconds: 3, big: true });
   w.bus.emit('respawn', { kind: 'gameover' });
 }
+
+export const cityTarget = (index: number) => 1_000_000 * index;
+
+export function progressionSystem(w: World): void {
+  if (w.cityDone || w.mission || w.ps.score < cityTarget(w.city.index)) return;
+  w.cityDone = true;
+  w.bus.emit('message', { text: 'CITY COMPLETE!', seconds: 4, big: true });
+  w.bus.emit('cityComplete', { index: w.city.index });
+}

@@ -131,3 +131,24 @@ export function drawPickups(ctx: Ctx, cam: Camera, w: World, icons: Icons) {
     ctx.drawImage(icons.pickup[p.kind], Math.round(tmp.x - s / 2), Math.round(tmp.y - s / 2 + bob), s, s);
   }
 }
+
+export function drawPhones(ctx: Ctx, cam: Camera, w: World) {
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  const z = cam.zoom;
+  for (const l of w.city.landmarks) {
+    if (l.kind !== 'payphone') continue;
+    const x = l.tx * 32 + 16, y = l.ty * 32 + 16;
+    if (!inView(cam, x, y, 20)) continue;
+    cam.worldToScreen(x, y, tmp);
+    const col = l.gang >= 0 ? w.city.gangs[l.gang]?.color ?? '#3498db' : '#3498db';
+    ctx.fillStyle = '#111'; ctx.fillRect(tmp.x - 5 * z, tmp.y - 5 * z, 10 * z, 10 * z);
+    ctx.fillStyle = col; ctx.fillRect(tmp.x - 4 * z, tmp.y - 4 * z, 8 * z, 8 * z);
+    ctx.fillStyle = '#ddd'; ctx.fillRect(tmp.x - 2 * z, tmp.y - 2 * z, 4 * z, 3 * z);
+    if (w.ringing.has(l.id) && !w.mission) {
+      const r = (6 + ((w.time * 20) % 10)) * z;
+      ctx.strokeStyle = `rgba(255,230,80,${Math.floor(w.time * 4) % 2 ? 0.9 : 0.4})`;
+      ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.arc(tmp.x, tmp.y, r, 0, Math.PI * 2); ctx.stroke();
+    }
+  }
+}

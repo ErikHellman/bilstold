@@ -20,6 +20,9 @@ import { gangSystem } from '../sim/ai/gang';
 import { criminalSystem } from '../sim/ai/criminal';
 import { emergencySystem } from '../sim/ai/emergency';
 import { registerGangs } from './gangs';
+import { payphoneSystem } from './payphones';
+import { frenzySystem, registerFrenzy } from './frenzy';
+import { progressionSystem } from './progression';
 
 export interface Session { world: World; seedString: string }
 
@@ -30,6 +33,17 @@ export function createSession(seed: string, cityIndex: number): Session {
   const world = new World(city, cityNum ^ Math.imul(cityIndex, 0x9e3779b1));
   registerCoreSystems(world);
   return { world, seedString };
+}
+
+/** Moves on to the next city from the same seed, carrying score, lives, multiplier and weapons. */
+export function nextCity(s: Session): Session {
+  const old = s.world.ps;
+  const n = createSession(s.seedString, s.world.city.index + 1);
+  Object.assign(n.world.ps, {
+    score: old.score, cityStartScore: old.score, lives: old.lives, multiplier: old.multiplier,
+    weapons: { ...old.weapons }, current: old.current, missionsDone: old.missionsDone, kills: old.kills, playTime: old.playTime,
+  });
+  return n;
 }
 
 /** Registers every simulation system in canonical order. Exported so tests can use synthetic cities. */
@@ -50,9 +64,13 @@ export function registerCoreSystems(w: World): void {
   w.addSystem('emergency', emergencySystem);
   w.addSystem('shops', shopsSystem);
   w.addSystem('death', deathSystem);
+  w.addSystem('payphones', payphoneSystem);
+  w.addSystem('frenzy', frenzySystem);
+  w.addSystem('progression', progressionSystem);
   registerScoring(w);
   registerCrimes(w);
   registerGangs(w);
+  registerFrenzy(w);
   const parked = new ParkedCars(w), population = new Population(w);
   w.addSystem('spawner', (_w, dt) => { parked.update(dt); population.update(dt); });
   w.bus.on('shot', e => panic(w, e.x, e.y, 220));

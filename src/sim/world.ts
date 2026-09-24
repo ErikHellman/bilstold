@@ -9,6 +9,8 @@ import type { City } from '../world/citygen';
 import { makePed, resetPed, skinFor } from './ped';
 import type { Explosion, Fire, Hazard, Pickup, PlayerState, Ped, PedKind, Projectile, Vehicle } from './types';
 import { makeVehicle, resetVehicle } from './vehicle';
+import type { MissionRunner } from '../game/missions/runner';
+import type { FrenzyState } from '../game/frenzy';
 
 export type System = (w: World, dt: number) => void;
 
@@ -48,6 +50,13 @@ export class World {
   readonly takenSpots = new Set<string>();
   /** Landmark id → world time when the shop may trigger again. */
   readonly shopCooldowns = new Map<number, number>();
+  mission: MissionRunner | null = null;
+  frenzy: FrenzyState | null = null;
+  /** Missions taken per payphone landmark id. */
+  phoneCounts: Record<number, number> = {};
+  /** Payphone landmark ids currently ringing. */
+  readonly ringing = new Set<number>();
+  cityDone = false;
   private systems: { name: string; fn: System }[] = [];
   private scratchPeds: Ped[] = [];
   private scratchVehicles: Vehicle[] = [];

@@ -50,6 +50,7 @@ export interface GameEvents {
   phoneRing: { x: number; y: number };
   cityComplete: { index: number };
   frenzyStart: {};
+  frenzyEnd: { success: boolean };
   crushed: { vehicle: Vehicle };
   garage: { landmark: Landmark; vehicle: Vehicle };
   respawn: { kind: 'wasted' | 'busted' | 'gameover' };

@@ -4,7 +4,7 @@ import type { World } from '../sim/world';
 import { speedOf } from '../sim/vehicle';
 import { Camera } from './camera';
 import { ctx2d, type Ctx } from './canvas';
-import { drawPeds, drawPickups, drawProjectiles, drawVehicles } from './entities';
+import { drawPeds, drawPhones, drawPickups, drawProjectiles, drawVehicles } from './entities';
 import { HudState, drawHud } from './hud';
 import { makeIcons, type Icons } from './sprites/icons';
 import { drawBuildings } from './buildings3d';
@@ -89,6 +89,7 @@ export class Renderer {
     cam.apply(ctx);
     this.ground.draw(ctx, cam);
     drawPickups(ctx, cam, w, this.icons);
+    drawPhones(ctx, cam, w);
     drawPeds(ctx, cam, w, this.peds, true);
     drawVehicles(ctx, cam, w, this.cars, this.peds);
     drawPeds(ctx, cam, w, this.peds, false);
@@ -99,6 +100,10 @@ export class Renderer {
     cam.apply(ctx);
     drawBuildings(ctx, cam, w.city);
     this.hud.update(w, dt);
+    const m = w.mission, f = w.frenzy;
+    this.hud.target = m?.target ?? null;
+    this.hud.timer = f ? f.timer : m && m.spec.timeLimit > 0 ? m.timer : null;
+    this.hud.counter = f ? `Kills ${f.kills}/${f.need}` : m?.counter ?? null;
     drawHud(ctx, w, this.hud, this.icons, cam, now / 1000);
   }
 
