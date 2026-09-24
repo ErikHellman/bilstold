@@ -4,7 +4,9 @@ import type { World } from '../sim/world';
 import { speedOf } from '../sim/vehicle';
 import { Camera } from './camera';
 import { ctx2d, type Ctx } from './canvas';
-import { drawPeds } from './entities';
+import { drawPeds, drawVehicles } from './entities';
+import { drawBuildings } from './buildings3d';
+import { CarSprites } from './sprites/cars';
 import { GroundCache } from './groundcache';
 import { makePedSprites, type PedSprites } from './sprites/peds';
 import { makeTileTextures, type TileTextures } from './sprites/tiles';
@@ -16,6 +18,7 @@ export class Renderer {
   ground: GroundCache | null = null;
   private tiles: TileTextures = makeTileTextures();
   private peds: PedSprites = makePedSprites();
+  private cars = new CarSprites();
   private last = performance.now();
   private unsub: (() => void)[] = [];
 
@@ -66,7 +69,10 @@ export class Renderer {
     cam.apply(ctx);
     this.ground.draw(ctx, cam);
     drawPeds(ctx, cam, w, this.peds, true);
+    drawVehicles(ctx, cam, w, this.cars, this.peds);
     drawPeds(ctx, cam, w, this.peds, false);
+    cam.apply(ctx);
+    drawBuildings(ctx, cam, w.city);
     ctx.setTransform(1, 0, 0, 1, 0, 0);
   }
 }

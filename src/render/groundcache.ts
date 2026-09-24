@@ -34,8 +34,16 @@ export class GroundCache {
     const n = Math.ceil(this.city.size / CHUNK);
     const cx0 = Math.max(0, Math.floor(r.x0 / PX)), cx1 = Math.min(n - 1, Math.floor(r.x1 / PX));
     const cy0 = Math.max(0, Math.floor(r.y0 / PX)), cy1 = Math.min(n - 1, Math.floor(r.y1 / PX));
+    // Draw in screen space with shared rounded edges so zoomed chunks never leave seams.
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    const a = { x: 0, y: 0 }, b = { x: 0, y: 0 };
     for (let cy = cy0; cy <= cy1; cy++)
-      for (let cx = cx0; cx <= cx1; cx++) ctx.drawImage(this.chunk(cx, cy), cx * PX, cy * PX);
+      for (let cx = cx0; cx <= cx1; cx++) {
+        cam.worldToScreen(cx * PX, cy * PX, a);
+        cam.worldToScreen((cx + 1) * PX, (cy + 1) * PX, b);
+        const x0 = Math.round(a.x), y0 = Math.round(a.y);
+        ctx.drawImage(this.chunk(cx, cy), x0, y0, Math.round(b.x) - x0, Math.round(b.y) - y0);
+      }
   }
 
   paintDecal(kind: DecalKind, x: number, y: number, angle: number, r: number): void {

@@ -2,6 +2,7 @@ import { hashString, normalizeSeed } from '../core/rng';
 import { stepPedMovement, killPed } from '../sim/ped';
 import { resolveVehiclePair, stepVehicle } from '../sim/vehicle';
 import { World } from '../sim/world';
+import { ParkedCars } from '../sim/spawner';
 import { generateCity } from '../world/citygen';
 import { controlPlayer } from './player';
 
@@ -21,6 +22,8 @@ export function registerCoreSystems(w: World): void {
   w.addSystem('player', controlPlayer);
   w.addSystem('vehicles', vehiclesSystem);
   w.addSystem('peds', pedsSystem);
+  const parked = new ParkedCars(w);
+  w.addSystem('spawner', (_w, dt) => parked.update(dt));
 }
 
 function vehiclesSystem(w: World, dt: number) {

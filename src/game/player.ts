@@ -6,7 +6,7 @@ import { T, isWalkable } from '../world/tiles';
 
 export { newPlayerState } from '../sim/world';
 
-const WALK = 95, BACK = 50, TURN = 4.5, APPROACH = 110, ENTER_RANGE = 48;
+const WALK = 95, BACK = 50, TURN = 4.5, APPROACH = 110, ENTER_RANGE = 56;
 
 export function controlPlayer(w: World, dt: number): void {
   const p = w.player, inp = w.input;
@@ -61,10 +61,10 @@ function cancelEnter(w: World) {
 export function playerEnterNearest(w: World): boolean {
   const p = w.player;
   let best: Vehicle | null = null, bd = Infinity;
-  for (const v of w.nearbyVehicles(p.x, p.y, ENTER_RANGE + 40)) {
+  for (const v of w.nearbyVehicles(p.x, p.y, ENTER_RANGE + 50)) {
     if (v.wreck || tileAtWorld(w.city, v.x, v.y) === T.Water) continue;
     const door = nearerDoor(v, p.x, p.y);
-    const d = Math.min(Math.hypot(v.x - p.x, v.y - p.y), Math.hypot(door.x - p.x, door.y - p.y));
+    const d = Math.min(Math.hypot(v.x - p.x, v.y - p.y) - v.def.length / 2, Math.hypot(door.x - p.x, door.y - p.y));
     if (d <= ENTER_RANGE && d < bd) { bd = d; best = v; }
   }
   if (!best) return false;
