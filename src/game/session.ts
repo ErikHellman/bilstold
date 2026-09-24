@@ -2,7 +2,9 @@ import { hashString, normalizeSeed } from '../core/rng';
 import { stepPedMovement, killPed } from '../sim/ped';
 import { resolveVehiclePair, stepVehicle } from '../sim/vehicle';
 import { World } from '../sim/world';
-import { ParkedCars } from '../sim/spawner';
+import { ParkedCars, Population } from '../sim/spawner';
+import { driveAI } from '../sim/ai/traffic';
+import { pedAI, panic } from '../sim/ai/pedestrian';
 import { generateCity } from '../world/citygen';
 import { controlPlayer } from './player';
 
@@ -20,10 +22,23 @@ export function createSession(seed: string, cityIndex: number): Session {
 /** Registers every simulation system in canonical order. Exported so tests can use synthetic cities. */
 export function registerCoreSystems(w: World): void {
   w.addSystem('player', controlPlayer);
+  w.addSystem('ai', aiSystem);
   w.addSystem('vehicles', vehiclesSystem);
   w.addSystem('peds', pedsSystem);
-  const parked = new ParkedCars(w);
-  w.addSystem('spawner', (_w, dt) => parked.update(dt));
+  const parked = new ParkedCars(w), population = new Population(w);
+  w.addSystem('spawner', (_w, dt) => { parked.update(dt); population.update(dt); });
+  w.bus.on('shot', e => panic(w, e.x, e.y, 220));
+  w.bus.on('explosion', e => panic(w, e.x, e.y, 320));
+}
+
+function aiSystem(w: World, dt: number) {
+  w.vehicles.each(v => {
+    const d = v.driver;
+    if (d === w.player) return;
+    if (!d || d.dead) { v.throttle = 0; v.brake = 0; v.steer = 0; v.handbrake = false; return; }
+    driveAI(w, v, dt);
+  });
+  w.peds.each(p => pedAI(w, p, dt));
 }
 
 function vehiclesSystem(w: World, dt: number) {
