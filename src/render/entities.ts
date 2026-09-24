@@ -104,8 +104,13 @@ export function drawProjectiles(ctx: Ctx, cam: Camera, w: World) {
   const hz = w.hazards.items;
   for (let i = 0; i < hz.length; i++) {
     const h = hz[i];
-    if (!h.active || h.kind !== 'mine' || !inView(cam, h.x, h.y, 10)) continue;
+    if (!h.active || !inView(cam, h.x, h.y, 20)) continue;
     cam.worldToScreen(h.x, h.y, tmp);
+    if (h.kind === 'oil') {
+      ctx.fillStyle = 'rgba(10,10,20,0.75)';
+      ctx.beginPath(); ctx.ellipse(tmp.x, tmp.y, 14 * z, 10 * z, 0, 0, Math.PI * 2); ctx.fill();
+      continue;
+    }
     ctx.fillStyle = '#222'; ctx.fillRect(tmp.x - 4 * z, tmp.y - 4 * z, 8 * z, 8 * z);
     ctx.fillStyle = Math.floor(w.time * 4) % 2 ? '#f33' : '#600'; ctx.fillRect(tmp.x - 1, tmp.y - 1, 2, 2);
   }

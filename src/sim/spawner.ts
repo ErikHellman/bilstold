@@ -203,7 +203,7 @@ export class Population {
     const far = (x: number, y: number, r: number) => (x - p.x) ** 2 + (y - p.y) ** 2 > r * r;
     w.vehicles.each(v => {
       if (v.parked || v.persistent || v === p.vehicle || v.driver === p) return;
-      if (far(v.x, v.y, SIM_RADIUS) || (v.wreck && v.skid > 0 && far(v.x, v.y, 450))) w.removeVehicle(v);
+      if (far(v.x, v.y, SIM_RADIUS) || (v.wreck && far(v.x, v.y, 450))) w.removeVehicle(v);
     });
     w.peds.each(q => {
       if (q === p || q.persistent || q.vehicle) return;

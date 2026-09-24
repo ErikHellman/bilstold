@@ -3,6 +3,7 @@ import { stepPedMovement, killPed } from '../sim/ped';
 import { resolveVehiclePair, stepVehicle } from '../sim/vehicle';
 import { pedVsVehicle } from '../sim/collision';
 import { combatSystem } from '../sim/combat';
+import { effectsSystem } from '../sim/explosions';
 import type { Vehicle } from '../sim/types';
 import { World } from '../sim/world';
 import { ParkedCars, Population } from '../sim/spawner';
@@ -30,6 +31,7 @@ export function registerCoreSystems(w: World): void {
   w.addSystem('contacts', contactsSystem);
   w.addSystem('peds', pedsSystem);
   w.addSystem('combat', combatSystem);
+  w.addSystem('effects', effectsSystem);
   const parked = new ParkedCars(w), population = new Population(w);
   w.addSystem('spawner', (_w, dt) => { parked.update(dt); population.update(dt); });
   w.bus.on('shot', e => panic(w, e.x, e.y, 220));
