@@ -1,5 +1,6 @@
 import { AudioEngine } from './audio/audio';
 import { Sfx } from './audio/sfx';
+import { Radio, RADIO_OFF } from './audio/radio';
 import { FixedLoop, startRaf } from './core/loop';
 import { createSession, nextCity, resolveSeed, type Session } from './game/session';
 import { Input, type InputState } from './input/input';
@@ -27,6 +28,7 @@ let saveTimer = AUTOSAVE_S;
 let unsub: (() => void)[] = [];
 const audio = new AudioEngine(settings);
 const sfx = new Sfx(audio, () => ({ x: renderer.cam.x, y: renderer.cam.y }));
+const radio = new Radio(audio);
 const unlockAudio = () => { audio.unlock(); audio.setActive(screen === 'playing' && !document.hidden); };
 addEventListener('keydown', unlockAudio);
 addEventListener('pointerdown', unlockAudio);
@@ -142,6 +144,12 @@ function step(dt: number) {
       if (inp.pressed.has('pause')) { pause(); return; }
       if (inp.pressed.has('map')) { screen = 'map'; renderer.showMap = true; audio.setActive(false); return; }
       if (input.lastDevice === 'gamepad' && !audio.ctx) unlockAudio();
+      if (inp.pressed.has('radio') && w.player.vehicle) {
+        settings.station = (settings.station + 1) % (RADIO_OFF + 1);
+        saveSettings();
+        radio.setStation(settings.station);
+        renderer.hud.radio = { text: radio.name(), t: 2 };
+      }
       w.step(inp, dt);
       w.ps.playTime += dt;
       saveTimer -= dt;
@@ -160,7 +168,16 @@ function step(dt: number) {
 }
 
 const loop = new FixedLoop(step);
-const frame = (a: number) => { renderer.render(a); if (screen === 'playing') sfx.tick(); };
+/** Radio plays only while the player sits in a car during play. */
+function syncRadio() {
+  const want = screen === 'playing' && !!session?.world.player.vehicle && settings.station !== RADIO_OFF;
+  if (want && !radio.playing && audio.ctx) {
+    radio.setStation(settings.station);
+    renderer.hud.radio = { text: radio.name(), t: 2 };
+  } else if (!want && radio.playing) radio.stop();
+  radio.update();
+}
+const frame = (a: number) => { renderer.render(a); if (screen === 'playing') sfx.tick(); syncRadio(); };
 let raf = startRaf(loop, frame, () => (settings.batterySaver || screen === 'title' ? 30 : 60));
 
 document.addEventListener('visibilitychange', () => {
