@@ -8,7 +8,8 @@ import { MissionRunner } from './missions/runner';
 export function payphoneSystem(w: World, dt: number): void {
   const pl = w.player, ps = w.ps;
   if (w.mission) {
-    const res = w.mission.update(dt);
+    let res: ReturnType<MissionRunner['update']>;
+    try { res = w.mission.update(dt); } catch { w.mission.fail('Mission cancelled'); res = 'fail'; }
     if (res === 'running') return;
     const m = w.mission;
     m.cleanup();

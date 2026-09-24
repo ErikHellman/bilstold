@@ -52,6 +52,7 @@ effects.fire = (w, x, y) => spawnFire(w, x, y);
 
 function explodeVehicle(w: World, v: Vehicle, r: number) {
   v.wreck = true;
+  v.parked = false;
   v.health = 0;
   v.burning = 0;
   v.bomb = 'none';

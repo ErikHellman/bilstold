@@ -1,4 +1,4 @@
-import { SPAWN_MAX, SPAWN_MIN, TILE } from '../../core/const';
+import { SIM_RADIUS, SPAWN_MAX, SPAWN_MIN, TILE } from '../../core/const';
 import { angleDiff } from '../../core/math';
 import type { VehicleModelId } from '../../game/data/vehicles';
 import type { WeaponId } from '../../game/data/weapons';
@@ -243,6 +243,12 @@ export function policeSystem(w: World, dt: number): void {
     });
     w.peds.each(p => { if (LAW_KINDS.has(p.kind) && p.persistent && p.ai.mode === 'chase') { p.persistent = false; Object.assign(p.ai, { mode: 'wander', timer: 2 }); } });
     return;
+  }
+  // units left far behind (roadblocks, abandoned cars, lost foot cops) are released so the pools recycle them
+  if (w.tick % 30 === 15) {
+    const far = (x: number, y: number) => Math.hypot(x - w.player.x, y - w.player.y) > SIM_RADIUS;
+    w.vehicles.each(v => { if (v.persistent && LAW_ROLES.has(v.def.role) && v.driver !== w.player && far(v.x, v.y)) v.persistent = false; });
+    w.peds.each(p => { if (p.persistent && !p.vehicle && LAW_KINDS.has(p.kind) && far(p.x, p.y)) p.persistent = false; });
   }
   // patrols nearby join in
   if (w.tick % 30 === 0) {

@@ -72,6 +72,8 @@ export class ParkedCars {
   }
 
   private take(v: Vehicle) {
+    // A stolen or destroyed car is no longer a parked car: it must not hold a CAP_PARKED slot.
+    v.parked = false;
     const key = this.bySpot.get(v);
     if (!key) return;
     this.w.takenSpots.add(key);

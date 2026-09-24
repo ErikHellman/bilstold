@@ -9,8 +9,8 @@ import { DEFAULT_SETTINGS, readSave, restoreSession, safeStorage, writeSave, typ
 import { hide } from './ui/overlay';
 import { showCityComplete, showPause } from './ui/pause';
 import { randomSeed, showTitle } from './ui/title';
+import { screenOnHide, type Screen } from './ui/screens';
 
-type Screen = 'title' | 'playing' | 'paused' | 'map' | 'cityComplete';
 const SETTINGS_KEY = 'bilstold.settings';
 const AUTOSAVE_S = 10;
 
@@ -135,11 +135,19 @@ function resume() {
   audio.setActive(true);
 }
 
+/** Gamepad A activates the focused menu button (keyboard Enter/Space already does natively). */
+function pressFocusedButton(inp: InputState) {
+  if (!inp.pressed.has('enter') || input.lastDevice !== 'gamepad') return;
+  const el = document.activeElement;
+  if (el instanceof HTMLButtonElement) el.click();
+}
+
 function step(dt: number) {
   const inp = input.poll();
   switch (screen) {
     case 'title':
       attract?.world.step(idle, dt);
+      pressFocusedButton(inp);
       break;
     case 'playing': {
       const w = session!.world;
@@ -164,9 +172,11 @@ function step(dt: number) {
       if (inp.pressed.has('map') || inp.pressed.has('pause')) { screen = 'playing'; renderer.showMap = false; audio.setActive(true); }
       break;
     case 'paused':
-      if (inp.pressed.has('pause')) resume();
+      if (inp.pressed.has('pause')) { resume(); break; }
+      pressFocusedButton(inp);
       break;
     case 'cityComplete':
+      pressFocusedButton(inp);
       break;
   }
 }
@@ -181,18 +191,20 @@ function syncRadio() {
   } else if (!want && radio.playing) radio.stop();
   radio.update();
 }
+/** Menus and the map barely change: draw them at a trickle. */
+const fpsCap = () => (screen === 'paused' || screen === 'cityComplete' ? 10 : settings.batterySaver || screen === 'title' || screen === 'map' ? 30 : 60);
 const frame = (a: number) => { renderer.render(a); if (screen === 'playing') sfx.tick(); syncRadio(); };
-let raf = startRaf(loop, frame, () => (settings.batterySaver || screen === 'title' ? 30 : 60));
+let raf = startRaf(loop, frame, fpsCap);
 
 document.addEventListener('visibilitychange', () => {
   if (document.hidden) {
     save();
+    if (screenOnHide(screen) === 'paused' && screen === 'playing') pause();
     raf.stop();
     audio.setActive(false);
   } else {
-    if (screen === 'playing') audio.setActive(true);
     raf.stop();
-    raf = startRaf(loop, frame, () => (settings.batterySaver || screen === 'title' ? 30 : 60));
+    raf = startRaf(loop, frame, fpsCap);
   }
 });
 addEventListener('pagehide', save);

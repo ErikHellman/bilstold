@@ -100,7 +100,7 @@ export class MissionRunner {
       }
       case 'carBomb': {
         const c = findWalkableNear(w.city, p.tx * TILE + TILE / 2, p.ty * TILE + TILE / 2);
-        this.primary = this.keep(w.spawnVehicle(p.model, c.x, c.y, 0, 0, true));
+        this.primary = this.keep(w.spawnVehicle(p.model, c.x, c.y, 0, 0, false));
         on('vehicleDestroyed', (e: { vehicle: Vehicle }) => {
           if (e.vehicle === this.primary) this.succeed();
         });

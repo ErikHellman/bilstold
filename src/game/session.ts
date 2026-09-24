@@ -9,7 +9,6 @@ import { resolveVehiclePair, stepVehicle } from '../sim/vehicle';
 import { pedVsVehicle } from '../sim/collision';
 import { combatSystem } from '../sim/combat';
 import { effectsSystem } from '../sim/explosions';
-import type { Vehicle } from '../sim/types';
 import { World } from '../sim/world';
 import { ParkedCars, Population } from '../sim/spawner';
 import { driveAI } from '../sim/ai/traffic';
@@ -115,15 +114,13 @@ function vehiclesSystem(w: World, dt: number) {
   });
 }
 
-const reacted = new WeakSet<Vehicle>();
-
 /** Cars against pedestrians, and NPC drivers reacting to being rammed by the player. */
 function contactsSystem(w: World) {
   w.vehicles.each(v => {
     for (const p of w.nearbyPeds(v.x, v.y, v.def.length / 2 + 8)) if (p !== v.driver) pedVsVehicle(w, p, v);
     const d = v.driver;
-    if (v.lastHitBy === w.player && d && d !== w.player && !reacted.has(v)) {
-      reacted.add(v);
+    if (v.lastHitBy === w.player && d && d !== w.player && !v.reacted) {
+      v.reacted = true;
       const angry = d.kind === 'gang' || w.rng() < 0.3;
       if (angry) {
         d.vehicle = null; v.driver = null;

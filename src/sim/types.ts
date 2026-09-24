@@ -35,6 +35,8 @@ export interface Vehicle {
   ai: DriveAI; bomb: 'none' | 'armed' | 'timed'; bombTimer: number;
   carWeapon: WeaponId | null; carAmmo: number;
   persistent: boolean; lastHitBy: Ped | null; skid: number;
+  /** The NPC driver has already reacted to being rammed by the player. */
+  reacted: boolean;
 }
 
 export type ProjKind = 'bullet' | 'flame' | 'arc' | 'thrown' | 'rocket' | 'shell';

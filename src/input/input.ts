@@ -22,6 +22,8 @@ const EDGE: Record<string, Action> = {
 };
 const PAD_EDGE: [number, Action][] = [[0, 'enter'], [4, 'weaponPrev'], [3, 'weaponNext'], [9, 'pause'], [8, 'map']];
 const DEADZONE = 0.2;
+const ACTIVATORS = new Set(['Enter', 'NumpadEnter', 'Space']);
+const CONTROLS = new Set(['BUTTON', 'SUMMARY', 'SELECT', 'A']);
 
 type PadLike = { connected: boolean; axes: readonly number[]; buttons: readonly { pressed: boolean; value: number }[] };
 
@@ -42,6 +44,8 @@ export class Input {
   private onKey(e: KeyboardEvent, down: boolean) {
     const tag = (e.target as { tagName?: string } | null)?.tagName;
     if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+    // Let focused menu buttons handle activation keys themselves.
+    if (ACTIVATORS.has(e.code) && tag && CONTROLS.has(tag)) return;
     if (!this.enabled) { if (!down) this.held.delete(e.code); return; }
     const mapped = e.code in HOLD || e.code in EDGE;
     if (!mapped) return;

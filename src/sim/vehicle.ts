@@ -17,7 +17,7 @@ export function makeVehicle(id: number): Vehicle {
     driver: null, parked: false, siren: false,
     ai: { mode: 'none', dir: 2, turnedHere: false, lastTile: -1, target: null, tx: 0, ty: 0, stuck: 0, honk: 0 },
     bomb: 'none', bombTimer: 0, carWeapon: null, carAmmo: 0,
-    persistent: false, lastHitBy: null, skid: 0,
+    persistent: false, lastHitBy: null, skid: 0, reacted: false,
   };
 }
 
@@ -29,7 +29,7 @@ export function resetVehicle(v: Vehicle, model: VehicleModelId, x: number, y: nu
     health: def.health, burning: 0, wreck: false, sinking: 0,
     driver: null, parked: false, siren: false, bomb: 'none', bombTimer: 0,
     carWeapon: model === 'tank' ? 'tankGun' : null, carAmmo: 0,
-    persistent: false, lastHitBy: null, skid: 0,
+    persistent: false, lastHitBy: null, skid: 0, reacted: false,
   });
   Object.assign(v.ai, { mode: 'none', dir: 2, turnedHere: false, lastTile: -1, target: null, tx: 0, ty: 0, stuck: 0, honk: 0 });
   return v;

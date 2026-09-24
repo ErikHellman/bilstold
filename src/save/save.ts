@@ -103,11 +103,32 @@ export function validate(o: unknown): o is SaveV1 {
   const m = o.mission;
   if (m !== null && (!obj(m) || !obj(m.spec) || typeof m.spec.kind !== 'string' || !obj(m.spec.params) || !num(m.stage) || !num(m.timer) || !num(m.progress))) return false;
   const f = o.frenzy;
-  if (f !== null && (!obj(f) || typeof f.weapon !== 'string' || !(f.weapon in WEAPONS) || !num(f.need) || !num(f.kills) || !num(f.timer))) return false;
+  if (f !== null && (!obj(f) || typeof f.weapon !== 'string' || !(f.weapon in WEAPONS) || !num(f.need) || !num(f.kills) || !num(f.timer)
+    || !(f.savedAmmo === null || f.savedAmmo === undefined || num(f.savedAmmo)))) return false;
   if (!obj(o.phoneCounts) || !Object.values(o.phoneCounts).every(num)) return false;
   if (!Array.isArray(o.takenSpots) || !o.takenSpots.every(s => typeof s === 'string')) return false;
   if (!num(st.master) || !num(st.music) || !num(st.sfx) || !num(st.station) || typeof st.batterySaver !== 'boolean') return false;
   return true;
+}
+
+/** Per-kind shape check for a saved mission; a bad mission is dropped rather than failing the whole save. */
+export function validMission(m: MissionSave): boolean {
+  const sp = m.spec as unknown as Record<string, unknown>;
+  if (!obj(sp) || typeof sp.title !== 'string' || !num(sp.reward) || !num(sp.timeLimit) || !num(sp.giver) || !num(sp.respect)) return false;
+  const p = sp.params as Record<string, unknown>;
+  if (!obj(p) || p.kind !== sp.kind) return false;
+  const model = (v: unknown) => typeof v === 'string' && v in VEHICLES;
+  switch (p.kind) {
+    case 'checkpoint': return Array.isArray(p.points) && p.points.length > 0 && p.points.every(q => obj(q) && num(q.tx) && num(q.ty));
+    case 'deliverCar': return model(p.model) && num(p.garage) && num(p.sx) && num(p.sy);
+    case 'assassinate': return num(p.tx) && num(p.ty) && typeof p.inCar === 'boolean' && num(p.guards) && num(p.gang);
+    case 'carBomb': return num(p.tx) && num(p.ty) && model(p.model) && num(p.gang);
+    case 'destroyVehicles': return model(p.model) && num(p.count);
+    case 'taxi': return num(p.fromPhone) && num(p.tx) && num(p.ty);
+    case 'crush': return model(p.model);
+    case 'rampage': return typeof p.weapon === 'string' && p.weapon in WEAPONS && num(p.kills) && ['any', 'gang', 'cop'].includes(p.target as string);
+    default: return false;
+  }
 }
 
 /** Rebuilds the city from the seed and puts the saved state back on top. */
@@ -135,8 +156,8 @@ export function restoreSession(save: SaveV1): Session {
   }
   for (const [k, n] of Object.entries(save.phoneCounts)) w.phoneCounts[Number(k)] = n;
   for (const t of save.takenSpots) w.takenSpots.add(t);
-  if (save.frenzy) w.frenzy = { ...save.frenzy };
-  if (save.mission) {
+  if (save.frenzy) w.frenzy = { ...save.frenzy, savedAmmo: save.frenzy.savedAmmo ?? null };
+  if (save.mission && validMission(save.mission)) {
     try { w.mission = MissionRunner.fromJSON(w, save.mission); } catch { w.mission = null; }
   }
   return s;

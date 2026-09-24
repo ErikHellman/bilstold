@@ -2,12 +2,17 @@ import type { World } from '../sim/world';
 import type { WeaponId } from './data/weapons';
 import { LAW_KINDS } from './wanted';
 
-export interface FrenzyState { weapon: WeaponId; need: number; kills: number; timer: number; target: 'any' | 'gang' | 'cop' }
+export interface FrenzyState {
+  weapon: WeaponId; need: number; kills: number; timer: number; target: 'any' | 'gang' | 'cop';
+  /** Ammo the player had for this weapon before the frenzy; null if they did not own it. */
+  savedAmmo: number | null;
+}
 
 const FRENZY_WEAPONS: WeaponId[] = ['smg', 'shotgun', 'flamer', 'electro', 'rocket', 'grenade'];
 
 export function startFrenzy(w: World, weapon: WeaponId, need: number, seconds: number, target: FrenzyState['target']): void {
-  w.frenzy = { weapon, need, kills: 0, timer: seconds, target };
+  const had = w.ps.weapons[weapon];
+  w.frenzy = { weapon, need, kills: 0, timer: seconds, target, savedAmmo: had !== undefined && had > 0 ? had : null };
   w.ps.weapons[weapon] = 999;
   w.ps.current = weapon;
   w.bus.emit('message', { text: 'KILL FRENZY!', seconds: 2, big: true });
@@ -18,8 +23,11 @@ function end(w: World, success: boolean) {
   const f = w.frenzy;
   if (!f) return;
   w.frenzy = null;
-  delete w.ps.weapons[f.weapon];
-  if (w.ps.current === f.weapon) w.ps.current = 'fists';
+  if (f.savedAmmo !== null) w.ps.weapons[f.weapon] = f.savedAmmo;
+  else {
+    delete w.ps.weapons[f.weapon];
+    if (w.ps.current === f.weapon) w.ps.current = 'fists';
+  }
   if (success) w.ps.score += 2000 * f.need;
   w.bus.emit('message', { text: success ? 'KILL FRENZY PASSED!' : 'FRENZY FAILED', seconds: 3, big: true });
   w.bus.emit('frenzyEnd', { success });
