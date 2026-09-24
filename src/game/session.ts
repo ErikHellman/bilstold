@@ -1,6 +1,8 @@
 import { hashString, normalizeSeed } from '../core/rng';
 import { stepPedMovement, killPed } from '../sim/ped';
 import { resolveVehiclePair, stepVehicle } from '../sim/vehicle';
+import { pedVsVehicle } from '../sim/collision';
+import type { Vehicle } from '../sim/types';
 import { World } from '../sim/world';
 import { ParkedCars, Population } from '../sim/spawner';
 import { driveAI } from '../sim/ai/traffic';
@@ -24,6 +26,7 @@ export function registerCoreSystems(w: World): void {
   w.addSystem('player', controlPlayer);
   w.addSystem('ai', aiSystem);
   w.addSystem('vehicles', vehiclesSystem);
+  w.addSystem('contacts', contactsSystem);
   w.addSystem('peds', pedsSystem);
   const parked = new ParkedCars(w), population = new Population(w);
   w.addSystem('spawner', (_w, dt) => { parked.update(dt); population.update(dt); });
@@ -61,6 +64,29 @@ function vehiclesSystem(w: World, dt: number) {
     const d = v.driver;
     if (d) { d.x = v.x; d.y = v.y; d.angle = v.angle; }
     if (v.sinking > 3 && v !== w.player.vehicle) w.removeVehicle(v);
+  });
+}
+
+const reacted = new WeakSet<Vehicle>();
+
+/** Cars against pedestrians, and NPC drivers reacting to being rammed by the player. */
+function contactsSystem(w: World) {
+  w.vehicles.each(v => {
+    for (const p of w.nearbyPeds(v.x, v.y, v.def.length / 2 + 8)) if (p !== v.driver) pedVsVehicle(w, p, v);
+    const d = v.driver;
+    if (v.lastHitBy === w.player && d && d !== w.player && !reacted.has(v)) {
+      reacted.add(v);
+      const angry = d.kind === 'gang' || w.rng() < 0.3;
+      if (angry) {
+        d.vehicle = null; v.driver = null;
+        d.x = v.x - Math.sin(v.angle) * (v.def.width / 2 + 8);
+        d.y = v.y + Math.cos(v.angle) * (v.def.width / 2 + 8);
+        Object.assign(d.ai, { mode: 'attack', target: w.player, timer: 20 });
+      } else {
+        v.ai.mode = 'flee';
+        Object.assign(d.ai, { mode: 'flee', tx: w.player.x, ty: w.player.y, timer: 8 });
+      }
+    }
   });
 }
 

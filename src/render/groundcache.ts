@@ -174,10 +174,12 @@ export class GroundCache {
         x.restore();
         break;
       case 'blood':
-        x.fillStyle = 'rgba(120,0,0,0.8)';
-        for (let i = 0; i < 7; i++) {
-          const a = hash01(d.seed, i) * Math.PI * 2, r = hash01(d.seed, i + 9) * 7;
-          x.fillRect(Math.round(px + Math.cos(a) * r) - 1, Math.round(py + Math.sin(a) * r) - 1, 3, 3);
+        x.fillStyle = 'rgba(150,0,0,0.85)';
+        x.beginPath(); x.arc(px, py, 4, 0, Math.PI * 2); x.fill();
+        for (let i = 0; i < 12; i++) {
+          const a = hash01(d.seed, i) * Math.PI * 2, r = 3 + hash01(d.seed, i + 9) * 9;
+          const sz = 2 + Math.floor(hash01(d.seed, i + 31) * 3);
+          x.fillRect(Math.round(px + Math.cos(a) * r) - 1, Math.round(py + Math.sin(a) * r) - 1, sz, sz);
         }
         break;
       case 'scorch':

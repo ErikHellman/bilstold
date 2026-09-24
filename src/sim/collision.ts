@@ -3,7 +3,9 @@ import { obbOverlap, type OBB } from '../core/math';
 import type { Bus, GameEvents } from '../core/events';
 import type { City } from '../world/citygen';
 import { isSolidWorld } from '../world/query';
-import type { Vehicle } from './types';
+import type { Ped, Vehicle } from './types';
+import { PED_RADIUS, killPed } from './ped';
+import type { World } from './world';
 import { damageVehicle, vehicleOBB } from './vehicle';
 
 const RESTITUTION = 0.3;
@@ -72,4 +74,33 @@ export function resolveVehiclePair(a: Vehicle, b: Vehicle, bus: Bus<GameEvents>)
     bus.emit('crash', { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2, force });
   }
   return true;
+}
+
+/** Resolves a pedestrian touching a vehicle: separation, knock-down or death depending on impact speed. */
+export function pedVsVehicle(w: World, p: Ped, v: Vehicle): void {
+  if (p.dead || p.vehicle || v.sinking > 0) return;
+  const c = Math.cos(v.angle), s = Math.sin(v.angle);
+  const dx = p.x - v.x, dy = p.y - v.y;
+  const lx = dx * c + dy * s, ly = -dx * s + dy * c;
+  const hw = v.def.length / 2 + PED_RADIUS, hh = v.def.width / 2 + PED_RADIUS;
+  if (Math.abs(lx) >= hw || Math.abs(ly) >= hh) return;
+  const px = hw - Math.abs(lx), py = hh - Math.abs(ly);
+  let nx: number, ny: number, depth: number;
+  if (px < py) { const sg = Math.sign(lx) || 1; nx = c * sg; ny = s * sg; depth = px; }
+  else { const sg = Math.sign(ly) || 1; nx = -s * sg; ny = c * sg; depth = py; }
+  const vn = v.vx * nx + v.vy * ny; // only the car's motion hurts; walking into a car just separates
+  p.x += nx * (depth + 0.5);
+  p.y += ny * (depth + 0.5);
+  if (v.wreck || vn <= 0) return;
+  const by = v.driver;
+  if (vn > 150 || (v.def.kind === 'tank' && vn > 20)) {
+    w.bus.emit('blood', { x: p.x, y: p.y });
+    killPed(w, p, by, 'car');
+  } else if (vn > 60) {
+    p.health -= vn * 0.25;
+    p.knocked = 0.8;
+    p.vx = nx * vn * 0.5;
+    p.vy = ny * vn * 0.5;
+    if (p.health <= 0) { w.bus.emit('blood', { x: p.x, y: p.y }); killPed(w, p, by, 'car'); }
+  }
 }
