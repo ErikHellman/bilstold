@@ -67,3 +67,7 @@ In dev builds, F3 shows a performance overlay. On a laptop the simulation takes 
 - Desktop only: keyboard or gamepad, no touch controls.
 - No building interiors, bridges over roads, or multiplayer.
 - Traffic AI is deliberately simple and can jam.
+
+## License
+
+[MIT](LICENSE) © 2026 Erik Hellman
