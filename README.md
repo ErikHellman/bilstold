@@ -4,6 +4,8 @@ A top-down car-theft sandbox in the spirit of the original GTA and GTA 2. It run
 
 You steal cars, pick up weapons and power-ups, answer ringing payphones for jobs, and play the three gangs off against each other. Along the way you try to outrun police who escalate from beat cops to army tanks. Each city is generated from a seed, and the game saves in your browser so you can pick up where you left off.
 
+**Play it:** https://erikhellman.github.io/bilstold/
+
 ## Running it
 
 ```bash
