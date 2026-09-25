@@ -111,6 +111,15 @@ PED_AI.extinguish = (w, p, dt) => {
 export function emergencySystem(w: World): void {
   if (w.tick % 60 !== 31) return;
   const pl = w.player;
+  // responders the player has left far behind are released so the pools recycle them
+  const far = (x: number, y: number) => Math.hypot(x - pl.x, y - pl.y) > SIM_RADIUS;
+  w.vehicles.each(v => {
+    if (v.persistent && (v.def.role === 'ambulance' || v.def.role === 'fire') && v.driver !== pl && far(v.x, v.y)) {
+      v.persistent = false;
+      if (v.driver) v.driver.persistent = false;
+    }
+  });
+  w.peds.each(p => { if (p.persistent && (p.kind === 'medic' || p.kind === 'fireman') && far(p.x, p.y)) p.persistent = false; });
   let ambulance = false, firetruck = false;
   w.vehicles.each(v => {
     if (v.def.role === 'ambulance' && v.persistent) ambulance = true;

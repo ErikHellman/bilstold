@@ -54,8 +54,8 @@ test('frame gate caps drawing at the fps cap on fast displays', () => {
   expect(count(144, 10)).toBeLessThanOrEqual(12);
 });
 
-test('police left far behind stop being persistent so the pools never fill', () => {
-  const { world: w } = createSession('chasepool', 1);
+test.each(['chasepool', 'a', 'b', 'c', 'd', 'e'])('units left far behind stop being persistent so the pools never fill (seed %s)', seed => {
+  const { world: w } = createSession(seed, 1);
   w.systemsEnabled.death = false;
   for (let s = 0; s < 180; s++) {
     w.ps.wanted.level = 4; w.ps.wanted.heat = 1700;
