@@ -3,7 +3,7 @@ import type { Vehicle } from '../sim/types';
 import { doorPoint, forwardSpeed } from '../sim/vehicle';
 import { fireWeapon } from '../sim/combat';
 import { FOOT_WEAPONS, type WeaponId } from './data/weapons';
-import { findWalkableNear, nearestLandmark, tileAtWorld } from '../world/query';
+import { findWalkableNear, nearestLandmark, streetPose, tileAt, tileAtWorld } from '../world/query';
 import { TILE } from '../core/const';
 import { clearWanted, LAW_KINDS, LAW_ROLES } from './wanted';
 import { gameOver } from './progression';
@@ -161,8 +161,11 @@ export function respawnPlayer(w: World, kind: 'wasted' | 'busted'): void {
   const p = w.player, ps = w.ps;
   if (p.vehicle) { p.vehicle.driver = null; p.vehicle = null; }
   const l = nearestLandmark(w.city, kind === 'wasted' ? 'hospital' : 'police', p.x, p.y);
-  const at = l ? findWalkableNear(w.city, l.tx * TILE + TILE / 2, l.ty * TILE + TILE / 2) : { x: w.city.startX, y: w.city.startY };
-  Object.assign(p, { x: at.x, y: at.y, vx: 0, vy: 0, dead: false, health: 100, armor: 0, burning: 0, knocked: 0, shocked: 0 });
+  // Like GTA: step out of the hospital / police station onto the pavement, facing the street.
+  const at = l && isWalkable(tileAt(w.city, l.tx, l.ty)) ? streetPose(w.city, l.tx, l.ty)
+    : l ? { ...findWalkableNear(w.city, l.tx * TILE + TILE / 2, l.ty * TILE + TILE / 2), angle: p.angle }
+    : { x: w.city.startX, y: w.city.startY, angle: w.city.startAngle };
+  Object.assign(p, { x: at.x, y: at.y, angle: at.angle, vx: 0, vy: 0, dead: false, health: 100, armor: 0, burning: 0, knocked: 0, shocked: 0 });
   p.ai.mode = 'idle';
   clearWanted(w);
   ps.deathState = 'alive';

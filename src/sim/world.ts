@@ -69,7 +69,7 @@ export class World {
     this.pedGrid = new SpatialHash<Ped>(64, worldSize);
     this.vehGrid = new SpatialHash<Vehicle>(128, worldSize);
     const p = this.peds.spawn()!;
-    resetPed(p, 'player', city.startX, city.startY, 0, 0);
+    resetPed(p, 'player', city.startX, city.startY, city.startAngle, 0);
     p.persistent = true;
     this.player = p;
   }

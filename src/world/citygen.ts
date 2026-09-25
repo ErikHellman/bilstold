@@ -1,9 +1,10 @@
-import { MAP_SIZE, TILE } from '../core/const';
+import { MAP_SIZE } from '../core/const';
 import { type Rng, makeRng, derive, randInt, pick, chance } from '../core/rng';
 import type { VehicleModelId } from '../game/data/vehicles';
 import { T, D, DIR, DIRS, DIR_VEC } from './tiles';
 import { gangNames } from './gangnames';
 import { placeLandmarks } from './landmarks';
+import { streetPose } from './query';
 
 export interface GangDef { id: number; name: string; color: string; carModel: VehicleModelId }
 export type LandmarkKind = 'hospital' | 'police' | 'respray' | 'bomb' | 'crusher' | 'garage' | 'gangHQ' | 'payphone';
@@ -14,6 +15,8 @@ export interface City {
   landmarks: Landmark[]; gangs: GangDef[];
   /** World units, on a sidewalk tile. */
   startX: number; startY: number;
+  /** Facing for a new game: straight out from the building behind the start tile. */
+  startAngle: number;
 }
 
 export const GANG_COLORS = ['#e8c547', '#4fb3e8', '#d9534f'];
@@ -29,7 +32,7 @@ export function generateCity(seed: number, index: number): City {
   const c: City = {
     seed, index, size,
     tiles: new Uint8Array(n).fill(T.Grass), height: new Uint8Array(n), roadDir: new Uint8Array(n),
-    district: new Uint8Array(n), gangZone: new Uint8Array(n), landmarks: [], gangs: [], startX: 0, startY: 0,
+    district: new Uint8Array(n), gangZone: new Uint8Array(n), landmarks: [], gangs: [], startX: 0, startY: 0, startAngle: 0,
   };
   const R = (step: string) => makeRng(derive(seed, 'city', index, step));
   const water = placeWater(c, R('water'));
@@ -373,16 +376,25 @@ function assignGangs(c: City, r: Rng, pts: Pt[]) {
 
 const dist = (a: Pt, b: Pt) => Math.hypot(a.x - b.x, a.y - b.y);
 
+/** Start on the sidewalk nearest the centre that has a building behind it and the road in front. */
 function pickStart(c: City) {
-  const { size } = c;
+  const { size, tiles } = c;
   const taken = new Set(c.landmarks.map(l => l.ty * size + l.tx));
   const mid = size / 2;
-  let best = -1, bd = Infinity;
+  const at = (x: number, y: number) => (x < 0 || y < 0 || x >= size || y >= size ? T.Water : tiles[y * size + x]);
+  const facing = (x: number, y: number) =>
+    ([[1, 0], [-1, 0], [0, 1], [0, -1]] as const).some(([dx, dy]) => at(x - dx, y - dy) === T.Building && at(x + dx, y + dy) === T.Road);
+  let best = -1, bd = Infinity, fallback = -1, fd = Infinity;
   for (let i = 0; i < size * size; i++) {
-    if (c.tiles[i] !== T.Sidewalk || taken.has(i)) continue;
-    const d = (i % size - mid) ** 2 + (((i / size) | 0) - mid) ** 2;
-    if (d < bd) { bd = d; best = i; }
+    if (tiles[i] !== T.Sidewalk || taken.has(i)) continue;
+    const x = i % size, y = (i / size) | 0;
+    const d = (x - mid) ** 2 + (y - mid) ** 2;
+    if (d < fd) { fd = d; fallback = i; }
+    if (d < bd && facing(x, y)) { bd = d; best = i; }
   }
-  c.startX = (best % size) * TILE + TILE / 2;
-  c.startY = ((best / size) | 0) * TILE + TILE / 2;
+  if (best < 0) best = fallback;
+  const pose = streetPose(c, best % size, (best / size) | 0);
+  c.startX = pose.x;
+  c.startY = pose.y;
+  c.startAngle = pose.angle;
 }

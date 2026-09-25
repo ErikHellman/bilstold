@@ -6,6 +6,7 @@ export function gameOver(w: World): void {
   w.ps = Object.assign(newPlayerState(), { score: start, cityStartScore: start, lives: 4 });
   w.player.x = w.city.startX;
   w.player.y = w.city.startY;
+  w.player.angle = w.city.startAngle;
   w.bus.emit('message', { text: 'GAME OVER', seconds: 3, big: true });
   w.bus.emit('respawn', { kind: 'gameover' });
 }

@@ -58,3 +58,20 @@ export function nearestLandmark(c: City, kind: LandmarkKind, x: number, y: numbe
 }
 
 export const landmarkCenter = (l: Landmark) => ({ x: l.tx * TILE + TILE / 2, y: l.ty * TILE + TILE / 2 });
+
+/**
+ * Where a pedestrian should stand on tile (tx, ty): the tile centre (half a tile from any wall),
+ * facing straight away from the adjacent building, or towards the street if there is none.
+ */
+export function streetPose(c: City, tx: number, ty: number): { x: number; y: number; angle: number } {
+  const at = (dx: number, dy: number) => tileAt(c, tx + dx, ty + dy);
+  const dirs: [number, number, number][] = [[1, 0, 0], [0, 1, Math.PI / 2], [-1, 0, Math.PI], [0, -1, -Math.PI / 2]];
+  const score = ([dx, dy]: [number, number, number]) => {
+    const ahead = at(dx, dy), behind = at(-dx, -dy);
+    if (!isWalkable(ahead)) return -1;
+    return (isSolid(behind) ? 4 : 0) + (ahead === T.Road ? 2 : 0) + (ahead === T.Sidewalk ? 1 : 0);
+  };
+  let best = dirs[0], bs = -Infinity;
+  for (const d of dirs) { const s = score(d); if (s > bs) { bs = s; best = d; } }
+  return { x: tx * TILE + TILE / 2, y: ty * TILE + TILE / 2, angle: best[2] };
+}

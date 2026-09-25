@@ -9,7 +9,7 @@ export function testCity(size = 40, fill: number = T.Road): City {
   return {
     seed: 0, index: 1, size, tiles, height: new Uint8Array(n),
     roadDir: new Uint8Array(n).fill(DIR.E | DIR.W | DIR.N | DIR.S),
-    district: new Uint8Array(n), gangZone: new Uint8Array(n), landmarks: [], gangs: [], startX: 64, startY: 64,
+    district: new Uint8Array(n), gangZone: new Uint8Array(n), landmarks: [], gangs: [], startX: 64, startY: 64, startAngle: 0,
   };
 }
 export function setTile(c: City, tx: number, ty: number, t: number, h = 3) {
