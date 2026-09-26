@@ -1,15 +1,17 @@
 import { VEHICLES, type VehicleModelId } from '../game/data/vehicles';
+import { DIFFICULTIES, type Difficulty } from '../game/difficulty';
 import { WEAPONS, type WeaponId } from '../game/data/weapons';
 import type { FrenzyState } from '../game/frenzy';
 import { MissionRunner } from '../game/missions/runner';
+import { PLAYER_MAX_HEALTH } from '../core/const';
 import type { MissionSave } from '../game/missions/templates';
 import { createSession, type Session } from '../game/session';
 import type { PlayerState } from '../sim/types';
 import { findWalkableNear } from '../world/query';
 
 export const SAVE_KEY = 'bilstold.save';
-export interface Settings { master: number; music: number; sfx: number; station: number; batterySaver: boolean }
-export const DEFAULT_SETTINGS: Settings = { master: 0.8, music: 0.6, sfx: 0.8, station: 0, batterySaver: false };
+export interface Settings { master: number; music: number; sfx: number; station: number; batterySaver: boolean; difficulty: Difficulty }
+export const DEFAULT_SETTINGS: Settings = { master: 0.8, music: 0.6, sfx: 0.8, station: 0, batterySaver: false, difficulty: 'normal' };
 
 export interface SaveV1 {
   version: 1; seed: string; cityIndex: number; savedAt: number;
@@ -108,6 +110,7 @@ export function validate(o: unknown): o is SaveV1 {
   if (!obj(o.phoneCounts) || !Object.values(o.phoneCounts).every(num)) return false;
   if (!Array.isArray(o.takenSpots) || !o.takenSpots.every(s => typeof s === 'string')) return false;
   if (!num(st.master) || !num(st.music) || !num(st.sfx) || !num(st.station) || typeof st.batterySaver !== 'boolean') return false;
+  if (st.difficulty !== undefined && !DIFFICULTIES.includes(st.difficulty as Difficulty)) return false;
   return true;
 }
 
@@ -144,7 +147,7 @@ export function restoreSession(save: SaveV1): Session {
   };
   const p = w.player;
   const at = findWalkableNear(w.city, save.player.x, save.player.y);
-  Object.assign(p, { x: at.x, y: at.y, angle: save.player.angle, health: save.player.health > 0 ? save.player.health : 100, armor: save.player.armor });
+  Object.assign(p, { x: at.x, y: at.y, angle: save.player.angle, health: save.player.health > 0 ? Math.min(save.player.health, PLAYER_MAX_HEALTH) : PLAYER_MAX_HEALTH, armor: save.player.armor });
   if (save.vehicle) {
     const sv = save.vehicle;
     const v = w.spawnVehicle(sv.model, at.x, at.y, sv.angle, sv.color, false);

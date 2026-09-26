@@ -1,5 +1,6 @@
 import type { Settings } from '../save/save';
 import { controlsTable, el, show } from './overlay';
+import { DIFFICULTIES, type Difficulty } from '../game/difficulty';
 
 export interface PauseOptions {
   settings: Settings;
@@ -20,9 +21,18 @@ function slider(label: string, value: number, onchange: (v: number) => void) {
 export function showPause(o: PauseOptions): void {
   const s = { ...o.settings };
   const update = () => o.onSettings({ ...s });
+  const label: Record<Difficulty, string> = { easy: 'Easy', normal: 'Normal', hard: 'Hard' };
+  const diffButtons = DIFFICULTIES.map(d => el('button', {
+    class: d === s.difficulty ? 'choice active' : 'choice', 'aria-pressed': String(d === s.difficulty),
+    onclick: () => {
+      s.difficulty = d; update();
+      for (const [i, b] of diffButtons.entries()) { const on = DIFFICULTIES[i] === d; b.className = on ? 'choice active' : 'choice'; b.setAttribute('aria-pressed', String(on)); }
+    },
+  }, label[d]));
   const panel = el('div', { class: 'panel' },
     el('h2', {}, 'Paused'),
     el('button', { class: 'primary', autofocus: true, onclick: o.onResume }, 'Resume'),
+    el('div', { class: 'row difficulty' }, el('span', {}, 'Difficulty'), ...diffButtons),
     el('details', {}, el('summary', {}, 'Settings'),
       slider('Master volume', s.master, v => { s.master = v; update(); }),
       slider('Music', s.music, v => { s.music = v; update(); }),

@@ -3,7 +3,7 @@ import { isFriendly, isHostile, RIVAL } from '../../game/gangs';
 import { hasLineOfSight } from '../../world/los';
 import { tileAtWorld } from '../../world/query';
 import { T } from '../../world/tiles';
-import { fireWeapon } from '../combat';
+import { armNpc, fireWeapon, npcAcquire } from '../combat';
 import type { Ped } from '../types';
 import type { World } from '../world';
 import { PED_AI } from './pedestrian';
@@ -45,7 +45,10 @@ PED_AI.attack = (w, p, dt) => {
   }
   const see = hasLineOfSight(w.city, p.x, p.y, src.x, src.y);
   p.angle = base;
-  if (see && d < 220) fireWeapon(w, p, p.weapon);
+  const inRange = see && d < 220;
+  if (inRange && !sawTarget.get(p)) npcAcquire(w, p);
+  sawTarget.set(p, inRange);
+  if (inRange) fireWeapon(w, p, p.weapon);
   if (d > 180 || !see) move(w, p, base, 80, dt);
   else if (d < 60) move(w, p, base + Math.PI, 60, dt);
   else move(w, p, base + (p.id % 2 ? 1.5 : -1.5), 40, dt);
@@ -54,9 +57,11 @@ PED_AI.attack = (w, p, dt) => {
 function armGang(w: World, p: Ped) {
   if (p.weapon !== 'fists') return;
   const r = w.ps.respect[p.gang] ?? 0;
-  p.weapon = r < -60 && w.rng() < 0.3 ? 'molotov' : w.rng() < 0.6 ? 'pistol' : 'smg';
-  p.ammo = -1;
+  armNpc(w, p, r < -60 && w.rng() < 0.3 ? 'molotov' : w.rng() < 0.6 ? 'pistol' : 'smg');
 }
+
+/** Whether each attacker could see its target last tick; regaining sight means aiming again. */
+const sawTarget = new WeakMap<Ped, boolean>();
 
 export function gangSystem(w: World): void {
   if (w.tick % 30 !== 0) return;

@@ -23,8 +23,8 @@ export const PICKUPS: Record<PickupId, PickupDef> = {
 
 /** How many of each non-car crate a city gets (64 in total). */
 export const PICKUP_MIX: [PickupId, number][] = [
-  ['w_pistol', 8], ['w_smg', 7], ['w_shotgun', 5], ['w_electro', 2], ['w_flamer', 2], ['w_molotov', 3], ['w_grenade', 2], ['w_rocket', 2],
-  ['health', 6], ['armor', 4], ['bribe', 3], ['jailFree', 2], ['life', 2], ['multiplier', 2],
+  ['w_pistol', 6], ['w_smg', 5], ['w_shotgun', 5], ['w_electro', 2], ['w_flamer', 2], ['w_molotov', 3], ['w_grenade', 2], ['w_rocket', 2],
+  ['health', 9], ['armor', 5], ['bribe', 3], ['jailFree', 2], ['life', 2], ['multiplier', 2],
   ['doubleDamage', 2], ['fastReload', 2], ['invuln', 2], ['electroFingers', 2], ['frenzy', 6],
 ];
 export const CAR_PICKUPS: PickupId[] = ['c_mg', 'c_mg', 'c_oil', 'c_oil', 'c_mines', 'c_mines'];

@@ -1,3 +1,4 @@
+import { PLAYER_MAX_HEALTH } from '../src/core/const';
 import { testCity } from './helpers';
 import { World } from '../src/sim/world';
 import { registerCoreSystems } from '../src/game/session';
@@ -21,7 +22,7 @@ test('weapon pickup adds capped ammo and selects weapon', () => {
 test('health, armor, life, multiplier, jail card', () => {
   const w = arena(); w.player.health = 20;
   applyPickup(w, 'health'); applyPickup(w, 'armor'); applyPickup(w, 'life'); applyPickup(w, 'multiplier'); applyPickup(w, 'jailFree');
-  expect(w.player.health).toBe(100); expect(w.player.armor).toBe(100); expect(w.ps.lives).toBe(5);
+  expect(w.player.health).toBe(PLAYER_MAX_HEALTH); expect(w.player.armor).toBe(100); expect(w.ps.lives).toBe(5);
   expect(w.ps.multiplier).toBe(2); expect(w.ps.jailFree).toBe(true);
 });
 test('bribe lowers wanted level', () => {

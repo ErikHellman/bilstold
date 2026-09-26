@@ -4,6 +4,7 @@ import { CIV_MODELS, VEHICLES, type VehicleModelId } from '../game/data/vehicles
 import { T, D, DIR, DIRS, DIR_VEC, DIR_ANGLE } from '../world/tiles';
 import type { City } from '../world/citygen';
 import type { PedKind, Vehicle } from './types';
+import { armNpc } from './combat';
 import type { World } from './world';
 
 const CHUNK = 16;
@@ -196,7 +197,7 @@ export class Population {
       const p = w.spawnPed(kind, tx * TILE + TILE / 2 + (x % 8) - 4, ty * TILE + TILE / 2 + (y % 8) - 4, 0);
       if (!p) return;
       if (gangMember) { p.gang = gangZone; p.skin = 12 + gangZone; }
-      if (kind === 'cop') { p.weapon = 'pistol'; p.ammo = -1; }
+      if (kind === 'cop') armNpc(w, p, 'pistol');
       p.ai.dir = DIRS[Math.floor(w.rng() * 4)];
       p.ai.timer = 1 + w.rng() * 5;
       return;

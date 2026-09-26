@@ -1,3 +1,4 @@
+import { PLAYER_MAX_HEALTH } from '../src/core/const';
 import { createSession } from '../src/game/session';
 import { landmarksOf } from '../src/world/query';
 import { isWalkable } from '../src/world/tiles';
@@ -16,7 +17,7 @@ test('wasted: lose life and weapons, respawn at hospital', () => {
   run(w, 4);
   expect(wasted).toBe(1); expect(w.ps.lives).toBe(3); expect(w.ps.weapons.smg).toBeUndefined();
   expect(w.ps.wanted.level).toBe(0); expect(near(w, 'hospital')).toBe(true);
-  expect(w.player.dead).toBe(false); expect(w.player.health).toBe(100); expect(w.ps.deathState).toBe('alive');
+  expect(w.player.dead).toBe(false); expect(w.player.health).toBe(PLAYER_MAX_HEALTH); expect(w.ps.deathState).toBe('alive');
   expect(isWalkable(tileAtWorld(w.city, w.player.x, w.player.y))).toBe(true);
 });
 test('busted: respawn at police station, multiplier reset; jail card saves weapons', () => {

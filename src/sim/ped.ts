@@ -1,4 +1,4 @@
-import { MAX_SUBSTEP, TILE } from '../core/const';
+import { MAX_SUBSTEP, PLAYER_MAX_HEALTH, TILE } from '../core/const';
 import type { Rng } from '../core/rng';
 import type { KillWeapon } from '../core/events';
 import type { City } from '../world/citygen';
@@ -21,7 +21,7 @@ export function makePed(id: number): Ped {
   };
 }
 
-const HEALTH: Partial<Record<PedKind, number>> = { elder: 60, swat: 150, soldier: 150, fbi: 120 };
+const HEALTH: Partial<Record<PedKind, number>> = { player: PLAYER_MAX_HEALTH, elder: 60, swat: 150, soldier: 150, fbi: 120 };
 
 export function resetPed(p: Ped, kind: PedKind, x: number, y: number, angle: number, skin = 1): Ped {
   Object.assign(p, {

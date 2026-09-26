@@ -14,3 +14,11 @@ export const SPAWN_MIN = 420;
 export const SPAWN_MAX = 700;
 /** Max movement per physics substep (anti-tunneling). */
 export const MAX_SUBSTEP = 8;
+
+export const PLAYER_MAX_HEALTH = 200;
+/** Seconds without taking damage before health starts regenerating. */
+export const REGEN_DELAY = 6;
+/** Regeneration in HP per second. */
+export const REGEN_RATE = 8;
+/** Regeneration stops at this much health (half of max). */
+export const REGEN_CAP = 100;

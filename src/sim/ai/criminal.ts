@@ -1,7 +1,7 @@
 import { LAW_KINDS } from '../../game/wanted';
 import { tileAtWorld } from '../../world/query';
 import { T } from '../../world/tiles';
-import { fireWeapon } from '../combat';
+import { armNpc, fireWeapon } from '../combat';
 import type { Ped } from '../types';
 import { doorPoint, speedOf } from '../vehicle';
 import type { World } from '../world';
@@ -22,7 +22,7 @@ function walkTo(w: World, p: Ped, x: number, y: number, speed: number, dt: numbe
 function alertCops(w: World, criminal: Ped) {
   for (const c of w.nearbyPeds(criminal.x, criminal.y, 300)) {
     if (c.dead || c.vehicle || !LAW_KINDS.has(c.kind) || c.ai.mode === 'chase') continue;
-    c.weapon = 'pistol'; c.ammo = -1;
+    armNpc(w, c, 'pistol');
     Object.assign(c.ai, { mode: 'chase', target: criminal, timer: 0 });
   }
 }

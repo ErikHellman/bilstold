@@ -3,6 +3,7 @@ import type { GameEvents } from '../../core/events';
 import type { Ped, Vehicle } from '../../sim/types';
 import type { World } from '../../sim/world';
 import { speedOf } from '../../sim/vehicle';
+import { armNpc } from '../../sim/combat';
 import { findWalkableNear, landmarkCenter, nearestLandmark } from '../../world/query';
 import { VEHICLES } from '../data/vehicles';
 import { startFrenzy } from '../frenzy';
@@ -93,7 +94,7 @@ export class MissionRunner {
         this.primary = t;
         for (let i = 0; i < p.guards; i++) {
           const g = this.keep(w.spawnPed('gang', c.x + (i - 1) * 14, c.y + 12, 0));
-          if (g) { g.gang = p.gang; g.skin = 12 + Math.max(0, p.gang); g.weapon = 'pistol'; g.ammo = -1; g.ai.mode = 'idle'; }
+          if (g) { g.gang = p.gang; g.skin = 12 + Math.max(0, p.gang); armNpc(w, g, 'pistol'); g.ai.mode = 'idle'; }
         }
         on('pedKilled', (e: { ped: Ped }) => { if (e.ped === this.primary) this.succeed(); });
         break;

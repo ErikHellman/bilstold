@@ -1,4 +1,4 @@
-import { SIM_RADIUS, TILE } from '../core/const';
+import { PLAYER_MAX_HEALTH, SIM_RADIUS, TILE } from '../core/const';
 import { derive, makeRng } from '../core/rng';
 import type { Pickup } from '../sim/types';
 import type { World } from '../sim/world';
@@ -74,7 +74,7 @@ export function applyPickup(w: World, kind: PickupId): void {
     ps.weapons[def.weapon] = Math.min(wd.maxAmmo, had + wd.ammoPickup);
     if (had <= 0) ps.current = def.weapon;
   } else switch (kind) {
-    case 'health': w.player.health = 100; break;
+    case 'health': w.player.health = PLAYER_MAX_HEALTH; break;
     case 'armor': w.player.armor = 100; break;
     case 'bribe': lowerWanted(w, 1); break;
     case 'jailFree': ps.jailFree = true; break;

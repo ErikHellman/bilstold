@@ -10,6 +10,7 @@ import { hide } from './ui/overlay';
 import { showCityComplete, showPause } from './ui/pause';
 import { randomSeed, showTitle } from './ui/title';
 import { screenOnHide, type Screen } from './ui/screens';
+import { DIFFICULTIES } from './game/difficulty';
 
 const SETTINGS_KEY = 'bilstold.settings';
 const AUTOSAVE_S = 10;
@@ -38,7 +39,11 @@ const idle: InputState = { accel: 0, brake: 0, steer: 0, fire: false, handbrake:
 function loadSettings(): Settings {
   try {
     const raw = store.get(SETTINGS_KEY);
-    if (raw) return { ...DEFAULT_SETTINGS, ...JSON.parse(raw) };
+    if (raw) {
+      const s: Settings = { ...DEFAULT_SETTINGS, ...JSON.parse(raw) };
+      if (!DIFFICULTIES.includes(s.difficulty)) s.difficulty = DEFAULT_SETTINGS.difficulty;
+      return s;
+    }
   } catch { /* fall back to defaults */ }
   return { ...DEFAULT_SETTINGS };
 }
@@ -90,6 +95,7 @@ function openTitle(notice: string | null = null) {
 function startSession(s: Session) {
   clearTimeout(seedDebounce);
   session = s;
+  s.world.difficulty = settings.difficulty;
   attract = null;
   renderer.attract = false;
   renderer.showMap = false;
@@ -124,7 +130,7 @@ function pause() {
     onQuit: () => { save(); if (import.meta.env.DEV) addEventListener('keydown', e => { if (e.code === 'F3') renderer.debug.visible = !renderer.debug.visible; });
 
 openTitle(); },
-    onSettings: s => { settings = s; saveSettings(); audio.setVolumes(s); },
+    onSettings: s => { settings = s; saveSettings(); audio.setVolumes(s); if (session) session.world.difficulty = s.difficulty; },
   });
 }
 

@@ -6,7 +6,7 @@ import { LAW_KINDS, LAW_ROLES } from '../../game/wanted';
 import { hasLineOfSight } from '../../world/los';
 import { isSolidWorld, tileAtWorld } from '../../world/query';
 import { T, DIR, DIRS, DIR_ANGLE } from '../../world/tiles';
-import { fireWeapon } from '../combat';
+import { armNpc, fireWeapon, npcAcquire } from '../combat';
 import type { Ped, PedKind, Vehicle } from '../types';
 import { forwardSpeed, speedOf } from '../vehicle';
 import type { World } from '../world';
@@ -55,10 +55,12 @@ function ring(w: World) {
   return { x, y, tx: Math.floor(x / TILE), ty: Math.floor(y / TILE) };
 }
 
-function arm(p: Ped) {
-  p.weapon = weaponFor(p.kind);
-  p.ammo = -1;
+function arm(w: World, p: Ped) {
+  armNpc(w, p, weaponFor(p.kind));
 }
+
+/** Whether each shooter could see its target last tick; regaining sight means aiming again. */
+const sawTarget = new WeakMap<Ped, boolean>();
 
 function spawnUnit(w: World, u: Unit, level: number): boolean {
   const c = w.city;
@@ -71,7 +73,7 @@ function spawnUnit(w: World, u: Unit, level: number): boolean {
       if (c.tiles[k] !== T.Sidewalk) continue;
       const p = w.spawnPed(crewKind(u, level), x, y, 0);
       if (!p) return false;
-      arm(p);
+      arm(w, p);
       Object.assign(p.ai, { mode: 'chase', target: null, timer: 0 });
       p.persistent = true;
       return true;
@@ -83,7 +85,7 @@ function spawnUnit(w: World, u: Unit, level: number): boolean {
     if (!v) return false;
     const d = w.spawnPed(crewKind(u, level), x, y, v.angle);
     if (!d) { w.removeVehicle(v); return false; }
-    arm(d);
+    arm(w, d);
     d.vehicle = v; v.driver = d; d.persistent = true;
     Object.assign(v.ai, { mode: 'chase', dir, lastTile: k, target: null });
     v.siren = u !== 'tank';
@@ -112,7 +114,7 @@ function bail(w: World, v: Vehicle) {
   const b = side(-1);
   if (!isSolidWorld(w.city, b.x, b.y)) {
     const partner = w.spawnPed(d.kind, b.x, b.y, v.angle);
-    if (partner) { arm(partner); partner.persistent = true; Object.assign(partner.ai, { mode: 'chase', target: null, timer: 0 }); }
+    if (partner) { arm(w, partner); partner.persistent = true; Object.assign(partner.ai, { mode: 'chase', target: null, timer: 0 }); }
   }
   v.ai.mode = 'none';
   v.siren = v.def.role !== 'army';
@@ -163,7 +165,10 @@ PED_AI.chase = (w, p, dt) => {
   const s = st(w);
   const armed = p.weapon !== 'fists';
   const mayShoot = armed && (level >= 3 || w.time - s.lastPlayerShot < 5 || tp !== w.player);
-  if (mayShoot && dist < 250 && dist > 30 && hasLineOfSight(w.city, p.x, p.y, tgt.x, tgt.y)) {
+  const canShoot = mayShoot && dist < 250 && dist > 30 && hasLineOfSight(w.city, p.x, p.y, tgt.x, tgt.y);
+  if (canShoot && !sawTarget.get(p)) npcAcquire(w, p);
+  sawTarget.set(p, canShoot);
+  if (canShoot) {
     p.angle = base;
     p.vx = 0; p.vy = 0;
     fireWeapon(w, p, p.weapon);
@@ -224,7 +229,7 @@ function roadblock(w: World) {
       const car = w.spawnVehicle('police', bx, by, horizontal ? Math.PI / 2 : 0, 0, false);
       if (!car) return;
       const cop = w.spawnPed('cop', bx + (horizontal ? -30 : 0), by + (horizontal ? 0 : -30), 0);
-      if (cop) { arm(cop); cop.persistent = true; Object.assign(cop.ai, { mode: 'chase', target: null, timer: 0 }); }
+      if (cop) { arm(w, cop); cop.persistent = true; Object.assign(cop.ai, { mode: 'chase', target: null, timer: 0 }); }
       Object.assign(car.ai, { mode: 'block' });
       car.siren = true; car.persistent = true;
     }
@@ -255,7 +260,7 @@ export function policeSystem(w: World, dt: number): void {
     for (const v of w.nearbyVehicles(w.player.x, w.player.y, 500))
       if (LAW_ROLES.has(v.def.role) && v.driver && v.driver !== w.player && v.ai.mode === 'cruise') { v.ai.mode = 'chase'; v.siren = true; v.persistent = true; }
     for (const p of w.nearbyPeds(w.player.x, w.player.y, 500))
-      if (LAW_KINDS.has(p.kind) && !p.vehicle && !p.dead && p.ai.mode === 'wander') { arm(p); p.ai.mode = 'chase'; p.persistent = true; }
+      if (LAW_KINDS.has(p.kind) && !p.vehicle && !p.dead && p.ai.mode === 'wander') { arm(w, p); p.ai.mode = 'chase'; p.persistent = true; }
   }
   s.spawnTimer -= dt;
   if (s.spawnTimer <= 0) {

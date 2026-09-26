@@ -4,7 +4,10 @@ import { doorPoint, forwardSpeed } from '../sim/vehicle';
 import { fireWeapon } from '../sim/combat';
 import { FOOT_WEAPONS, type WeaponId } from './data/weapons';
 import { findWalkableNear, nearestLandmark, streetPose, tileAt, tileAtWorld } from '../world/query';
-import { TILE } from '../core/const';
+import { PLAYER_MAX_HEALTH, REGEN_CAP, REGEN_DELAY, REGEN_RATE, TILE } from '../core/const';
+
+/** Seconds of invulnerability after respawning. */
+const SPAWN_PROTECTION = 3;
 import { clearWanted, LAW_KINDS, LAW_ROLES } from './wanted';
 import { gameOver } from './progression';
 import { T, isWalkable } from '../world/tiles';
@@ -165,7 +168,8 @@ export function respawnPlayer(w: World, kind: 'wasted' | 'busted'): void {
   const at = l && isWalkable(tileAt(w.city, l.tx, l.ty)) ? streetPose(w.city, l.tx, l.ty)
     : l ? { ...findWalkableNear(w.city, l.tx * TILE + TILE / 2, l.ty * TILE + TILE / 2), angle: p.angle }
     : { x: w.city.startX, y: w.city.startY, angle: w.city.startAngle };
-  Object.assign(p, { x: at.x, y: at.y, angle: at.angle, vx: 0, vy: 0, dead: false, health: 100, armor: 0, burning: 0, knocked: 0, shocked: 0 });
+  Object.assign(p, { x: at.x, y: at.y, angle: at.angle, vx: 0, vy: 0, dead: false, health: PLAYER_MAX_HEALTH, armor: 0, burning: 0, knocked: 0, shocked: 0 });
+  ps.powerups.invuln = Math.max(ps.powerups.invuln, SPAWN_PROTECTION);
   p.ai.mode = 'idle';
   clearWanted(w);
   ps.deathState = 'alive';
@@ -188,4 +192,12 @@ export function respawnPlayer(w: World, kind: 'wasted' | 'busted'): void {
     ps.score = Math.max(0, ps.score - Math.floor(ps.score * 0.1));
   }
   w.bus.emit('respawn', { kind });
+}
+
+/** Health slowly comes back up to REGEN_CAP after REGEN_DELAY seconds without taking damage. */
+export function regenSystem(w: World, dt: number): void {
+  const p = w.player;
+  if (p.dead || w.ps.deathState !== 'alive' || p.health >= REGEN_CAP) return;
+  if (w.time - w.playerHurtAt < REGEN_DELAY) return;
+  p.health = Math.min(REGEN_CAP, p.health + REGEN_RATE * dt);
 }

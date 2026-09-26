@@ -1,7 +1,9 @@
 import { MAX_SUBSTEP } from '../core/const';
 import type { KillWeapon } from '../core/events';
 import { WEAPONS, type WeaponId, type WeaponDef } from '../game/data/weapons';
+import { DIFFICULTY } from '../game/difficulty';
 import { isSolidWorld } from '../world/query';
+import { hasLineOfSight } from '../world/los';
 import { killPed } from './ped';
 import type { Ped, Projectile, Vehicle } from './types';
 import { damageVehicle } from './vehicle';
@@ -18,8 +20,14 @@ export const effects = {
 export function damagePed(w: World, p: Ped, amount: number, by: Ped | null, weapon: KillWeapon): void {
   if (p.dead || amount <= 0) return;
   const ps = w.ps;
-  if (p === w.player && ps.powerups.invuln > 0) return;
-  if (by === w.player && ps.powerups.doubleDamage > 0) amount *= 2;
+  if (p === w.player) {
+    if (ps.powerups.invuln > 0) return;
+    if (weapon !== 'water') amount *= DIFFICULTY[w.difficulty].damageTaken;
+    if (by === w.player) amount *= 0.5; // own explosions and fire hurt less
+    w.playerHurtAt = w.time;
+    const src = by ?? p;
+    w.bus.emit('playerHurt', { amount, x: src.x, y: src.y });
+  } else if (by === w.player && ps.powerups.doubleDamage > 0) amount *= 2;
   if (p.armor > 0) {
     const absorbed = Math.min(p.armor, amount);
     p.armor -= absorbed;
@@ -35,7 +43,7 @@ export function damagePed(w: World, p: Ped, amount: number, by: Ped | null, weap
   if (CALM_KINDS.has(p.kind)) Object.assign(p.ai, { mode: 'flee', tx: by.x, ty: by.y, timer: 6 });
   else if (p.kind === 'gang' || p.kind === 'criminal') {
     if (p.ai.mode !== 'attack') Object.assign(p.ai, { mode: 'attack', target: by, timer: 20 });
-    if (p.weapon === 'fists' && p.kind === 'gang') { p.weapon = 'pistol'; p.ammo = -1; }
+    if (p.weapon === 'fists' && p.kind === 'gang') armNpc(w, p, 'pistol');
   }
 }
 
@@ -43,6 +51,37 @@ export function damageVehicleBy(w: World, v: Vehicle, amount: number, by: Ped | 
   if (by === w.player && w.ps.powerups.doubleDamage > 0) amount *= 2;
   damageVehicle(v, amount, by);
   if (by) v.lastHitBy = by;
+}
+
+/** Gives an NPC a weapon with unlimited ammo; it needs a moment to aim before its first shot. */
+export function armNpc(w: World, p: Ped, weapon: WeaponId): void {
+  p.weapon = weapon;
+  p.ammo = -1;
+  p.cooldown = Math.max(p.cooldown, DIFFICULTY[w.difficulty].npcFirstShot);
+}
+
+/** An NPC that (re)acquires a target must aim again before firing. */
+export function npcAcquire(w: World, p: Ped): void {
+  p.cooldown = Math.max(p.cooldown, DIFFICULTY[w.difficulty].npcFirstShot);
+}
+
+const THREAT_KINDS = new Set(['cop', 'swat', 'fbi', 'soldier']);
+
+/** Player aim assist: the best target inside the difficulty's cone, preferring those who threaten the player. */
+function assistAngle(w: World, shooter: Ped, def: WeaponDef, angle: number): number {
+  const cone = DIFFICULTY[w.difficulty].aimAssist;
+  let best: Ped | null = null, bestScore = Infinity;
+  for (const p of w.nearbyPeds(shooter.x, shooter.y, def.range)) {
+    if (p === shooter || p.dead || p.vehicle) continue;
+    const dx = p.x - shooter.x, dy = p.y - shooter.y;
+    const off = Math.abs(Math.atan2(Math.sin(Math.atan2(dy, dx) - angle), Math.cos(Math.atan2(dy, dx) - angle)));
+    if (off > cone || !hasLineOfSight(w.city, shooter.x, shooter.y, p.x, p.y)) continue;
+    const threat = ((p.ai.mode === 'attack' || p.ai.mode === 'chase') && (p.ai.target === shooter || p.ai.target === null))
+      || (THREAT_KINDS.has(p.kind) && w.ps.wanted.level > 0);
+    const score = off + (threat ? 0 : 1);
+    if (score < bestScore) { bestScore = score; best = p; }
+  }
+  return best ? Math.atan2(best.y - shooter.y, best.x - shooter.x) : angle;
 }
 
 /** Ammo the player holds for a weapon; -1 means infinite. */
@@ -109,9 +148,16 @@ export function fireWeapon(w: World, shooter: Ped, weapon: WeaponId, vehicle?: V
     if (a !== Infinity) w.ps.weapons[weapon] = a - 1;
   } else if (shooter.ammo === 0) return false;
   else if (shooter.ammo > 0) shooter.ammo--;
-  shooter.cooldown = def.cooldown * (isPlayer && w.ps.powerups.fastReload > 0 ? 0.5 : 1) * (isPlayer ? 1 : 1.6);
+  const diff = DIFFICULTY[w.difficulty];
+  if (isPlayer) shooter.cooldown = def.cooldown * (w.ps.powerups.fastReload > 0 ? 0.5 : 1);
+  else {
+    shooter.cooldown = def.cooldown * diff.npcRate;
+    if (def.kind === 'bullet') shooter.cooldown = Math.max(0.3, shooter.cooldown);
+  }
 
-  const angle = vehicle ? vehicle.angle : shooter.angle;
+  let angle = vehicle ? vehicle.angle : shooter.angle;
+  if (isPlayer && !vehicle && (def.kind === 'bullet' || def.kind === 'rocket' || def.kind === 'flame')) angle = assistAngle(w, shooter, def, angle);
+  else if (!isPlayer) angle += ((w.rng() + w.rng()) - 1) * diff.npcSpread;
   const c = Math.cos(angle), s = Math.sin(angle);
   const reach = vehicle ? vehicle.def.length / 2 + 6 : 8;
   const ox = (vehicle ?? shooter).x + c * reach, oy = (vehicle ?? shooter).y + s * reach;
@@ -190,7 +236,7 @@ function stepProjectile(w: World, pr: Projectile, dt: number) {
     }
     pr.x = nx; pr.y = ny;
     if (pr.kind === 'thrown') continue;
-    const hitR = pr.kind === 'flame' ? 10 : 8;
+    const hitR = pr.kind === 'flame' ? 10 : pr.owner === w.player ? 11 : 8;
     for (const p of w.nearbyPeds(pr.x, pr.y, hitR)) {
       if (p === pr.owner || p.dead || p.vehicle) continue;
       if (pr.kind === 'flame') { damagePed(w, p, pr.damage, pr.owner, 'flamer'); p.burning = Math.max(p.burning, 3); continue; }

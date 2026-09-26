@@ -53,6 +53,14 @@ The game has no runtime dependencies, and there are no image, audio or font file
 - **Missions:** jobs from ringing payphones. They include delivering cars, assassinations, car bombs, checkpoint races, destroying vehicles, taxi rides, the crusher and rampages.
 - **Radio:** four procedural stations play while you drive: *Radio Bilstöld*, *Hårdrock FM*, *Dansbandet* and *Lugna Favoriter*.
 
+## Health, aiming and difficulty
+
+- You have 200 HP (five hearts of 40). After 6 seconds without taking damage, health slowly regenerates up to half. Health crates restore it fully.
+- After a respawn you get 3 seconds of protection. Your own explosions hurt you only half as much.
+- Your shots on foot get aim assist: they curve towards a target near where you're facing, preferring whoever is shooting at you.
+- Enemies need a moment to aim when they first see you, miss more often at range and don't lead a moving target. When you're hit, the screen edges flash red and an arrow points towards the shooter.
+- **Difficulty** (pause menu, saved): *Easy* (enemies hit rarely and softly, wide aim assist), *Normal* (default) or *Hard* (accurate enemies, full damage, narrow aim assist).
+
 ## Keeping it light
 
 - **Rendering:** the game draws at 640 px wide and scales up with pixelated filtering. The ground is drawn once into cached 512 px chunks.

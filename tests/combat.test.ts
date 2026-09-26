@@ -1,3 +1,4 @@
+import { PLAYER_MAX_HEALTH } from '../src/core/const';
 import { testCity, setTile } from './helpers';
 import { World } from '../src/sim/world';
 import { registerCoreSystems } from '../src/game/session';
@@ -48,12 +49,12 @@ test('no ammo, no shot', () => {
   expect(fireWeapon(w, w.player, 'pistol')).toBe(false);
 });
 test('armor absorbs damage first, invulnerability blocks it', () => {
-  const w = arena(); w.player.armor = 30;
+  const w = arena(); w.difficulty = 'hard'; w.player.armor = 30; // hard: no damage scaling
   damagePed(w, w.player, 20, null, 'pistol');
-  expect(w.player.health).toBe(100); expect(w.player.armor).toBe(10);
+  expect(w.player.health).toBe(PLAYER_MAX_HEALTH); expect(w.player.armor).toBe(10);
   w.ps.powerups.invuln = 5;
   damagePed(w, w.player, 50, null, 'pistol');
-  expect(w.player.health).toBe(100);
+  expect(w.player.health).toBe(PLAYER_MAX_HEALTH);
 });
 test('double damage doubles player damage', () => {
   const w = arena(); const p = civAt(w, 500, 400); w.ps.powerups.doubleDamage = 5;

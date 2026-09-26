@@ -54,4 +54,5 @@ export interface GameEvents {
   crushed: { vehicle: Vehicle };
   garage: { landmark: Landmark; vehicle: Vehicle };
   respawn: { kind: 'wasted' | 'busted' | 'gameover' };
+  playerHurt: { amount: number; x: number; y: number };
 }

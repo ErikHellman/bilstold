@@ -1,4 +1,4 @@
-import { TILE } from '../core/const';
+import { PLAYER_MAX_HEALTH, TILE } from '../core/const';
 import { WEAPONS } from '../game/data/weapons';
 import type { World } from '../sim/world';
 import type { Camera } from './camera';
@@ -18,6 +18,9 @@ export class HudState {
   vehicleName: Timed | null = null;
   zoneName: Timed | null = null;
   radio: Timed | null = null;
+  /** Seconds left of the red hit flash, and where the last hit came from. */
+  hurt = 0;
+  hurtFrom: { x: number; y: number } | null = null;
   private lastZone = -1;
   private unsub: (() => void)[] = [];
 
@@ -33,10 +36,12 @@ export class HudState {
       w.bus.on('enterCar', e => { this.vehicleName = { text: e.vehicle.def.name, t: 2 }; }),
       w.bus.on('wasted', () => { this.big = { text: 'WASTED', t: 3, color: '#e74c3c' }; }),
       w.bus.on('busted', () => { this.big = { text: 'BUSTED', t: 3, color: '#3498db' }; }),
+      w.bus.on('playerHurt', e => { this.hurt = 0.35; this.hurtFrom = { x: e.x, y: e.y }; }),
     ];
   }
 
   update(w: World, dt: number) {
+    this.hurt = Math.max(0, this.hurt - dt);
     const m = this.messages[0];
     if (m && (m.t -= dt) <= 0) this.messages.shift();
     for (const k of ['big', 'vehicleName', 'zoneName', 'radio'] as const) {
@@ -65,10 +70,11 @@ export function drawHud(ctx: Ctx, w: World, hud: HudState, icons: Icons, cam: Ca
   drawText(ctx, pad(ps.score, 7), 8, 6, '#f1c40f', 2);
   drawText(ctx, `X${ps.multiplier}`, 8 + textWidth('0000000', 2) + 6, 13, '#fff', 1);
   // hearts
-  const hp = Math.max(0, p.health);
-  for (let i = 0; i < 5; i++) {
-    const v = hp - i * 20;
-    ctx.drawImage(icons.heart[v >= 20 ? 0 : v >= 10 ? 1 : 2], 8 + i * 10, 24);
+  const hp = Math.max(0, p.health), per = PLAYER_MAX_HEALTH / 5;
+  const low = hp < PLAYER_MAX_HEALTH * 0.25 && Math.floor(time * 4) % 2 === 0;
+  if (!low) for (let i = 0; i < 5; i++) {
+    const v = hp - i * per;
+    ctx.drawImage(icons.heart[v >= per ? 0 : v >= per / 2 ? 1 : 2], 8 + i * 10, 24);
   }
   if (p.armor > 0) { ctx.fillStyle = '#123'; ctx.fillRect(8, 35, 50, 3); ctx.fillStyle = '#3498db'; ctx.fillRect(8, 35, p.armor / 2, 3); }
   ctx.drawImage(icons.person, 62, 24);
@@ -128,6 +134,8 @@ export function drawHud(ctx: Ctx, w: World, hud: HudState, icons: Icons, cam: Ca
     ctx.fillStyle = '#6f6'; ctx.fillRect(W / 2 - tw / 2, H - 22, tw, 1);
     drawText(ctx, m.text, W / 2, H - 18, '#b6ffb6', 1, 'center');
   }
+  if (hud.hurt > 0) drawHurt(ctx, cam, p.x, p.y, hud);
+
   // big centre message
   if (hud.big) {
     const pulse = Math.sin(time * 8) > -0.6 ? 3 : 0;
@@ -152,5 +160,23 @@ function drawArrow(ctx: Ctx, cam: Camera, px: number, py: number, tx: number, ty
   ctx.setTransform(Math.cos(a), Math.sin(a), -Math.sin(a), Math.cos(a), cx, cy);
   ctx.fillStyle = '#000'; ctx.beginPath(); ctx.moveTo(9, 0); ctx.lineTo(-6, -7); ctx.lineTo(-6, 7); ctx.fill();
   ctx.fillStyle = '#f1c40f'; ctx.beginPath(); ctx.moveTo(7, 0); ctx.lineTo(-4, -5); ctx.lineTo(-4, 5); ctx.fill();
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+}
+
+/** Red flash at the screen edges plus an arrow at the edge pointing towards whoever hit the player. */
+function drawHurt(ctx: Ctx, cam: Camera, px: number, py: number, hud: HudState) {
+  const W = cam.viewW, H = cam.viewH, a = Math.min(1, hud.hurt / 0.35);
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.fillStyle = `rgba(220,20,20,${0.35 * a})`;
+  const e = 10;
+  ctx.fillRect(0, 0, W, e); ctx.fillRect(0, H - e, W, e); ctx.fillRect(0, e, e, H - 2 * e); ctx.fillRect(W - e, e, e, H - 2 * e);
+  const from = hud.hurtFrom;
+  if (!from || (Math.abs(from.x - px) < 1 && Math.abs(from.y - py) < 1)) return;
+  const ang = Math.atan2(from.y - py, from.x - px);
+  const r = Math.min(W, H) / 2 - 24;
+  const cx = W / 2 + Math.cos(ang) * r, cy = H / 2 + Math.sin(ang) * r;
+  ctx.setTransform(Math.cos(ang), Math.sin(ang), -Math.sin(ang), Math.cos(ang), cx, cy);
+  ctx.fillStyle = `rgba(255,40,40,${0.9 * a})`;
+  ctx.beginPath(); ctx.moveTo(12, 0); ctx.lineTo(-6, -9); ctx.lineTo(-6, 9); ctx.fill();
   ctx.setTransform(1, 0, 0, 1, 0, 0);
 }

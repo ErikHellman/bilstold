@@ -14,7 +14,7 @@ import { ParkedCars, Population } from '../sim/spawner';
 import { driveAI } from '../sim/ai/traffic';
 import { pedAI, panic } from '../sim/ai/pedestrian';
 import { generateCity } from '../world/citygen';
-import { controlPlayer, deathSystem } from './player';
+import { controlPlayer, deathSystem, regenSystem } from './player';
 import { shopsSystem } from './shops';
 import { Pickups } from './pickups';
 import { registerScoring } from './score';
@@ -68,6 +68,7 @@ export function registerCoreSystems(w: World): void {
   w.addSystem('emergency', emergencySystem);
   w.addSystem('shops', shopsSystem);
   w.addSystem('death', deathSystem);
+  w.addSystem('regen', regenSystem);
   w.addSystem('payphones', payphoneSystem);
   w.addSystem('frenzy', frenzySystem);
   w.addSystem('progression', progressionSystem);

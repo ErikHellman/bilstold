@@ -1,3 +1,4 @@
+import { PLAYER_MAX_HEALTH } from '../src/core/const';
 import { testCity } from './helpers';
 import { World } from '../src/sim/world';
 import { registerCoreSystems } from '../src/game/session';
@@ -33,7 +34,7 @@ test('attacking gang member hurts the player', () => {
   const w = arena(); w.ps.respect[0] = -50; w.systemsEnabled.death = false;
   const g = w.spawnPed('gang', 2050, 1900, 0)!; g.gang = 0; g.ai.mode = 'wander';
   run(w, 5);
-  expect(w.player.health).toBeLessThan(100);
+  expect(w.player.health).toBeLessThan(PLAYER_MAX_HEALTH);
 });
 test('friendly gang ignores player', () => {
   const w = arena(); w.ps.respect[0] = 40;

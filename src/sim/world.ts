@@ -11,6 +11,7 @@ import type { Explosion, Fire, Hazard, Pickup, PlayerState, Ped, PedKind, Projec
 import { makeVehicle, resetVehicle } from './vehicle';
 import type { MissionRunner } from '../game/missions/runner';
 import type { FrenzyState } from '../game/frenzy';
+import type { Difficulty } from '../game/difficulty';
 
 export type System = (w: World, dt: number) => void;
 
@@ -57,6 +58,9 @@ export class World {
   /** Payphone landmark ids currently ringing. */
   readonly ringing = new Set<number>();
   cityDone = false;
+  difficulty: Difficulty = 'normal';
+  /** World time the player last took damage (drives regeneration). */
+  playerHurtAt = -99;
   private systems: { name: string; fn: System }[] = [];
   private scratchPeds: Ped[] = [];
   private scratchVehicles: Vehicle[] = [];
