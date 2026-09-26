@@ -6,6 +6,7 @@ import { SpatialHash } from '../core/spatial';
 import type { VehicleModelId } from '../game/data/vehicles';
 import type { InputState } from '../input/input';
 import type { City } from '../world/citygen';
+import { FogOfWar } from '../world/fog';
 import { makePed, resetPed, skinFor } from './ped';
 import type { Explosion, Fire, Hazard, Pickup, PlayerState, Ped, PedKind, Projectile, Vehicle } from './types';
 import { makeVehicle, resetVehicle } from './vehicle';
@@ -58,6 +59,7 @@ export class World {
   /** Payphone landmark ids currently ringing. */
   readonly ringing = new Set<number>();
   cityDone = false;
+  readonly fog: FogOfWar;
   difficulty: Difficulty = 'normal';
   /** World time the player last took damage (drives regeneration). */
   playerHurtAt = -99;
@@ -72,6 +74,7 @@ export class World {
     const worldSize = city.size * TILE;
     this.pedGrid = new SpatialHash<Ped>(64, worldSize);
     this.vehGrid = new SpatialHash<Vehicle>(128, worldSize);
+    this.fog = new FogOfWar(city.size);
     const p = this.peds.spawn()!;
     resetPed(p, 'player', city.startX, city.startY, city.startAngle, 0);
     p.persistent = true;

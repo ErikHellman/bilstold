@@ -1,5 +1,6 @@
 import type { World } from '../sim/world';
 import type { City } from '../world/citygen';
+import type { FogOfWar } from '../world/fog';
 import { T } from '../world/tiles';
 import { makeCanvas, ctx2d, type Canvas, type Ctx } from './canvas';
 import { drawText } from './font';
@@ -9,6 +10,7 @@ const COLORS: Record<number, [number, number, number]> = {
   [T.Grass]: [77, 122, 53], [T.Tree]: [44, 90, 34], [T.Plaza]: [184, 165, 130], [T.Parking]: [90, 92, 96],
 };
 const cache = new WeakMap<City, Canvas>();
+const fogCache = new WeakMap<FogOfWar, { version: number; img: Canvas }>();
 
 function cityImage(c: City): Canvas {
   let img = cache.get(c);
@@ -31,6 +33,25 @@ function cityImage(c: City): Canvas {
   return img;
 }
 
+/** Dark overlay hiding unexplored tiles; punched transparent where the fog has been revealed. */
+function fogImage(fog: FogOfWar): Canvas {
+  const cached = fogCache.get(fog);
+  if (cached && cached.version === fog.version) return cached.img;
+  const img = makeCanvas(fog.size, fog.size);
+  const x = ctx2d(img);
+  const data = x.createImageData(fog.size, fog.size);
+  for (let ty = 0; ty < fog.size; ty++) {
+    for (let tx = 0; tx < fog.size; tx++) {
+      const i = ty * fog.size + tx;
+      data.data[i * 4] = 5; data.data[i * 4 + 1] = 7; data.data[i * 4 + 2] = 10;
+      data.data[i * 4 + 3] = fog.isRevealed(tx, ty) ? 0 : 235;
+    }
+  }
+  x.putImageData(data, 0, 0);
+  fogCache.set(fog, { version: fog.version, img });
+  return img;
+}
+
 const MARK: Record<string, [string, string]> = {
   hospital: ['H', '#e74c3c'], police: ['P', '#3498db'], respray: ['$', '#e67e22'], bomb: ['*', '#ff4d4d'],
   crusher: ['#', '#bdc3c7'], garage: ['G', '#f1c40f'],
@@ -45,8 +66,10 @@ export function drawMap(ctx: Ctx, w: World, viewW: number, viewH: number, time: 
   const ox = 10, oy = (viewH - size) / 2, k = size / c.size;
   ctx.imageSmoothingEnabled = false;
   ctx.drawImage(cityImage(c), ox, oy, size, size);
+  ctx.drawImage(fogImage(w.fog), ox, oy, size, size);
   const at = (tx: number, ty: number) => ({ x: ox + (tx + 0.5) * k, y: oy + (ty + 0.5) * k });
   for (const l of c.landmarks) {
+    if (!w.fog.isRevealed(l.tx, l.ty)) continue;
     const p = at(l.tx, l.ty);
     if (l.kind === 'payphone') {
       const ringing = w.ringing.has(l.id) && Math.floor(time * 3) % 2 === 0;
