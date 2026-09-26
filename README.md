@@ -32,6 +32,8 @@ The game has no runtime dependencies, and there are no image, audio or font file
 | M | Back | City map |
 | Esc / P | Start | Pause and settings |
 
+There is also a hidden cheats menu for weapons, power-ups, god mode and spawning any car. The title screen drops a hint about how to open it.
+
 ## Seeds and saving
 
 - On the title screen you can type a seed (any text, including Swedish letters) or roll a random one. The same seed always builds the same city. `?seed=…` in the URL pre-fills the field.

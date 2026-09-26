@@ -11,6 +11,9 @@ import { showCityComplete, showPause } from './ui/pause';
 import { randomSeed, showTitle } from './ui/title';
 import { screenOnHide, type Screen } from './ui/screens';
 import { DIFFICULTIES } from './game/difficulty';
+import { CheatCode } from './input/cheatcode';
+import { giveWeapon, givePowerup, loseTheCops, refillAmmo, setGodMode, spawnCarNear } from './game/cheats';
+import { showCheats } from './ui/cheats';
 
 const SETTINGS_KEY = 'bilstold.settings';
 const AUTOSAVE_S = 10;
@@ -136,6 +139,29 @@ openTitle(); },
   });
 }
 
+// Hidden cheats menu. The secret key sequence is documented in src/input/cheatcode.ts.
+new CheatCode(window, openCheats);
+
+function openCheats() {
+  if (screen !== 'playing' || !session) return;
+  const w = session.world;
+  if (w.ps.deathState !== 'alive') return;
+  screen = 'cheats';
+  audio.setActive(false);
+  input.releaseAll();
+  showCheats({
+    inVehicle: !!w.player.vehicle,
+    godMode: w.godMode,
+    onWeapon: id => giveWeapon(w, id),
+    onRefill: () => refillAmmo(w),
+    onPowerup: k => givePowerup(w, k),
+    onClearWanted: () => loseTheCops(w),
+    onGodMode: on => setGodMode(w, on),
+    onSpawnCar: m => { spawnCarNear(w, m); resume(); },
+    onClose: resume,
+  });
+}
+
 function resume() {
   hide();
   input.releaseAll();
@@ -184,6 +210,7 @@ function step(dt: number) {
       if (inp.pressed.has('registry') || inp.pressed.has('pause')) { screen = 'playing'; renderer.showRegistry = false; audio.setActive(true); }
       break;
     case 'paused':
+    case 'cheats':
       if (inp.pressed.has('pause')) { resume(); break; }
       pressFocusedButton(inp);
       break;
@@ -204,7 +231,7 @@ function syncRadio() {
   radio.update();
 }
 /** Menus and the map barely change: draw them at a trickle. */
-const fpsCap = () => (screen === 'paused' || screen === 'cityComplete' ? 10 : settings.batterySaver || screen === 'title' || screen === 'map' || screen === 'registry' ? 30 : 60);
+const fpsCap = () => (screen === 'paused' || screen === 'cheats' || screen === 'cityComplete' ? 10 : settings.batterySaver || screen === 'title' || screen === 'map' || screen === 'registry' ? 30 : 60);
 const frame = (a: number) => { renderer.render(a); if (screen === 'playing') sfx.tick(); syncRadio(); };
 let raf = startRaf(loop, frame, fpsCap);
 

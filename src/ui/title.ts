@@ -41,6 +41,7 @@ export function showTitle(o: TitleOptions): void {
     el('button', { class: s ? '' : 'primary', autofocus: !s, onclick: start }, 'New game'),
     confirmRow,
     el('details', {}, el('summary', {}, 'Controls'), controlsTable()),
+    el('p', { class: 'hint' }, 'Psst… a certain 1986 code still works on these streets.'),
   );
   show(panel);
 }
