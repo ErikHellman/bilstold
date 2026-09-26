@@ -14,6 +14,8 @@ export const SPAWN_MIN = 420;
 export const SPAWN_MAX = 700;
 /** Max movement per physics substep (anti-tunneling). */
 export const MAX_SUBSTEP = 8;
+/** Tiles: radius around the player revealed on the map screen's fog of war. */
+export const FOG_REVEAL_RADIUS = 11;
 
 export const PLAYER_MAX_HEALTH = 200;
 /** Seconds without taking damage before health starts regenerating. */

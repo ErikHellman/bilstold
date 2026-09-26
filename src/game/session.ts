@@ -27,6 +27,7 @@ import { registerGangs } from './gangs';
 import { payphoneSystem } from './payphones';
 import { frenzySystem, registerFrenzy } from './frenzy';
 import { progressionSystem } from './progression';
+import { fogSystem } from './fog';
 
 export interface Session { world: World; seedString: string }
 
@@ -54,6 +55,7 @@ export function nextCity(s: Session): Session {
 /** Registers every simulation system in canonical order. Exported so tests can use synthetic cities. */
 export function registerCoreSystems(w: World): void {
   w.addSystem('player', controlPlayer);
+  w.addSystem('fog', fogSystem);
   w.addSystem('ai', aiSystem);
   w.addSystem('vehicles', vehiclesSystem);
   w.addSystem('contacts', contactsSystem);
