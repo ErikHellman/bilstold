@@ -17,6 +17,7 @@ export interface SaveV1 {
   player: { x: number; y: number; angle: number; health: number; armor: number };
   vehicle: { model: VehicleModelId; color: number; health: number; angle: number; carWeapon: WeaponId | null; carAmmo: number } | null;
   mission: MissionSave | null; frenzy: FrenzyState | null; phoneCounts: Record<number, number>; takenSpots: string[];
+  discovered: VehicleModelId[];
   settings: Settings;
 }
 
@@ -52,6 +53,7 @@ export function serialize(s: Session, settings: Settings): SaveV1 {
     frenzy: w.frenzy ? { ...w.frenzy } : null,
     phoneCounts: { ...w.phoneCounts },
     takenSpots: [...w.takenSpots],
+    discovered: [...w.discovered],
     settings: { ...settings },
   };
 }
@@ -78,7 +80,10 @@ export function readSave(store: Store): LoadResult {
 export function migrate(o: unknown): unknown {
   if (!o || typeof o !== 'object') return null;
   const v = (o as { version?: unknown }).version;
-  return v === 1 ? o : null;
+  if (v !== 1) return null;
+  const rec = o as Record<string, unknown>;
+  if (!Array.isArray(rec.discovered)) rec.discovered = []; // pre-registry saves had no discovery log
+  return o;
 }
 
 const num = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v);
@@ -107,6 +112,7 @@ export function validate(o: unknown): o is SaveV1 {
     || !(f.savedAmmo === null || f.savedAmmo === undefined || num(f.savedAmmo)))) return false;
   if (!obj(o.phoneCounts) || !Object.values(o.phoneCounts).every(num)) return false;
   if (!Array.isArray(o.takenSpots) || !o.takenSpots.every(s => typeof s === 'string')) return false;
+  if (!Array.isArray(o.discovered) || !o.discovered.every(m => typeof m === 'string' && m in VEHICLES)) return false;
   if (!num(st.master) || !num(st.music) || !num(st.sfx) || !num(st.station) || typeof st.batterySaver !== 'boolean') return false;
   return true;
 }
@@ -156,6 +162,7 @@ export function restoreSession(save: SaveV1): Session {
   }
   for (const [k, n] of Object.entries(save.phoneCounts)) w.phoneCounts[Number(k)] = n;
   for (const t of save.takenSpots) w.takenSpots.add(t);
+  for (const m of save.discovered) w.discovered.add(m);
   if (save.frenzy) w.frenzy = { ...save.frenzy, savedAmmo: save.frenzy.savedAmmo ?? null };
   if (save.mission && validMission(save.mission)) {
     try { w.mission = MissionRunner.fromJSON(w, save.mission); } catch { w.mission = null; }

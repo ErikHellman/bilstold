@@ -82,11 +82,12 @@ test('frenzy fails when time runs out', () => {
 test('reaching the city target completes the city and nextCity carries progress', () => {
   const s = createSession('progress', 1); const w = s.world;
   let done = 0; w.bus.on('cityComplete', () => done++);
-  w.ps.score = cityTarget(1); w.ps.lives = 2; w.ps.multiplier = 3; w.ps.weapons.smg = 40;
+  w.ps.score = cityTarget(1); w.ps.lives = 2; w.ps.multiplier = 3; w.ps.weapons.smg = 40; w.discovered.add('tank');
   w.step(idle(), DT); w.step(idle(), DT);
   expect(done).toBe(1);
   const n = nextCity(s);
   expect(n.world.city.index).toBe(2); expect(n.world.ps.score).toBe(cityTarget(1)); expect(n.world.ps.cityStartScore).toBe(cityTarget(1));
   expect(n.world.ps.lives).toBe(2); expect(n.world.ps.multiplier).toBe(3); expect(n.world.ps.weapons.smg).toBe(40);
   expect(n.world.city.tiles).not.toEqual(w.city.tiles);
+  expect(n.world.discovered.has('tank')).toBe(true);
 });

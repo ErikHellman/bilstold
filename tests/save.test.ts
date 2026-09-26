@@ -19,7 +19,7 @@ test('round trip restores player state, vehicle, mission and position', () => {
   w.player.vehicle = v; v.driver = w.player; v.health = 50; v.carWeapon = 'carMG'; v.carAmmo = 40;
   const ph = landmarksOf(w.city, 'payphone')[0];
   w.mission = new MissionRunner(w, generateMission(w.city, ph, 0, w.ps)); w.mission.timer = 33;
-  w.phoneCounts[ph.id] = 1; w.takenSpots.add('5,6');
+  w.phoneCounts[ph.id] = 1; w.takenSpots.add('5,6'); w.discovered.add('sports'); w.discovered.add('tank');
   const st = mem();
   expect(writeSave(st, s, DEFAULT_SETTINGS)).toBe(true);
   const r = readSave(st); expect(r.ok).toBe(true); if (!r.ok) return;
@@ -32,6 +32,14 @@ test('round trip restores player state, vehicle, mission and position', () => {
   expect(Math.hypot(w2.player.x - w.player.x, w2.player.y - w.player.y)).toBeLessThan(40);
   expect(w2.mission!.spec).toEqual(w.mission.spec); expect(w2.mission!.timer).toBe(33);
   expect(w2.phoneCounts[ph.id]).toBe(1); expect(w2.takenSpots.has('5,6')).toBe(true);
+  expect(w2.discovered.has('sports')).toBe(true); expect(w2.discovered.has('tank')).toBe(true); expect(w2.discovered.has('bus')).toBe(false);
+});
+test('a save from before the vehicle registry existed loads with an empty one', () => {
+  const s = createSession('old', 1); const st = mem(); writeSave(st, s, DEFAULT_SETTINGS);
+  const o = JSON.parse(st.get(SAVE_KEY)!); delete o.discovered; st.set(SAVE_KEY, JSON.stringify(o));
+  const r = readSave(st); expect(r.ok).toBe(true); if (!r.ok) return;
+  expect(r.save.discovered).toEqual([]);
+  expect(restoreSession(r.save).world.discovered.size).toBe(0);
 });
 test.each([['not json{'], ['{"version":1'], [JSON.stringify({ version: 99 })], [JSON.stringify({ version: 1, seed: 5 })]])('corrupt save %# is discarded', raw => {
   const st = mem(); st.set(SAVE_KEY, raw);

@@ -47,6 +47,7 @@ export function nextCity(s: Session): Session {
     score: old.score, cityStartScore: old.score, lives: old.lives, multiplier: old.multiplier,
     weapons: { ...old.weapons }, current: old.current, missionsDone: old.missionsDone, kills: old.kills, playTime: old.playTime,
   });
+  for (const m of s.world.discovered) n.world.discovered.add(m);
   return n;
 }
 

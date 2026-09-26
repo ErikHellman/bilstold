@@ -7,6 +7,7 @@ import { ctx2d, type Ctx } from './canvas';
 import { drawPeds, drawPhones, drawPickups, drawProjectiles, drawVehicles } from './entities';
 import { HudState, drawHud } from './hud';
 import { drawMap } from './mapscreen';
+import { drawRegistry } from './registryscreen';
 import { drawText } from './font';
 import { DebugOverlay } from './debug';
 import { makeIcons, type Icons } from './sprites/icons';
@@ -33,6 +34,7 @@ export class Renderer {
   /** Title screen: slow camera drift over the city, no player or HUD. */
   attract = false;
   showMap = false;
+  showRegistry = false;
   private unsub: (() => void)[] = [];
 
   constructor(readonly canvas: HTMLCanvasElement) {
@@ -92,6 +94,7 @@ export class Renderer {
     ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
     if (!w || !this.ground) return;
     if (this.showMap) { drawMap(ctx, w, cam.viewW, cam.viewH, now / 1000); return; }
+    if (this.showRegistry) { drawRegistry(ctx, w, this.cars, cam.viewW, cam.viewH); return; }
     const p = w.player, v = p.vehicle;
     if (this.attract) {
       const t = now / 1000;
@@ -104,6 +107,7 @@ export class Renderer {
     drawPhones(ctx, cam, w);
     drawPeds(ctx, cam, w, this.peds, true);
     drawVehicles(ctx, cam, w, this.cars, this.peds);
+    if (!this.attract) this.discoverVisible(w);
     drawPeds(ctx, cam, w, this.peds, false, this.attract ? p : null);
     drawProjectiles(ctx, cam, w);
     this.emitAmbient(w, dt);
@@ -128,6 +132,12 @@ export class Renderer {
     this.debug.frame(dt);
     this.debug.renderMs = this.debug.renderMs * 0.9 + (performance.now() - now) * 0.1;
     this.debug.draw(ctx, w, this.ground.cachedCount, cam.viewH);
+  }
+
+  /** Adds every on-screen vehicle's model to the player's vehicle registry. */
+  private discoverVisible(w: World): void {
+    const r = this.cam.visibleRect();
+    w.vehicles.each(v => { if (v.x > r.x0 && v.x < r.x1 && v.y > r.y0 && v.y < r.y1) w.discovered.add(v.model); });
   }
 
   /** Smoke from damaged cars, flames from anything burning. */

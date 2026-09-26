@@ -53,6 +53,7 @@ function setAttract(seed: string) {
   attract = createSession(resolveSeed(seed, () => 'BILSTÖLD'), 1);
   renderer.attract = true;
   renderer.showMap = false;
+  renderer.showRegistry = false;
   renderer.setWorld(attract.world);
   expose(attract);
 }
@@ -93,6 +94,7 @@ function startSession(s: Session) {
   attract = null;
   renderer.attract = false;
   renderer.showMap = false;
+  renderer.showRegistry = false;
   renderer.setWorld(s.world);
   input.enabled = true;
   input.releaseAll();
@@ -153,6 +155,7 @@ function step(dt: number) {
       const w = session!.world;
       if (inp.pressed.has('pause')) { pause(); return; }
       if (inp.pressed.has('map')) { screen = 'map'; renderer.showMap = true; audio.setActive(false); return; }
+      if (inp.pressed.has('registry')) { screen = 'registry'; renderer.showRegistry = true; audio.setActive(false); return; }
       if (input.lastDevice === 'gamepad' && !audio.ctx) unlockAudio();
       if (inp.pressed.has('radio') && w.player.vehicle) {
         settings.station = (settings.station + 1) % (RADIO_OFF + 1);
@@ -170,6 +173,9 @@ function step(dt: number) {
     }
     case 'map':
       if (inp.pressed.has('map') || inp.pressed.has('pause')) { screen = 'playing'; renderer.showMap = false; audio.setActive(true); }
+      break;
+    case 'registry':
+      if (inp.pressed.has('registry') || inp.pressed.has('pause')) { screen = 'playing'; renderer.showRegistry = false; audio.setActive(true); }
       break;
     case 'paused':
       if (inp.pressed.has('pause')) { resume(); break; }
@@ -192,7 +198,7 @@ function syncRadio() {
   radio.update();
 }
 /** Menus and the map barely change: draw them at a trickle. */
-const fpsCap = () => (screen === 'paused' || screen === 'cityComplete' ? 10 : settings.batterySaver || screen === 'title' || screen === 'map' ? 30 : 60);
+const fpsCap = () => (screen === 'paused' || screen === 'cityComplete' ? 10 : settings.batterySaver || screen === 'title' || screen === 'map' || screen === 'registry' ? 30 : 60);
 const frame = (a: number) => { renderer.render(a); if (screen === 'playing') sfx.tick(); syncRadio(); };
 let raf = startRaf(loop, frame, fpsCap);
 
