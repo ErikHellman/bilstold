@@ -65,6 +65,8 @@ export class World {
   difficulty: Difficulty = 'normal';
   /** World time the player last took damage (drives regeneration). */
   playerHurtAt = -99;
+  /** Cheat: the player cannot be hurt or killed. Not saved. */
+  godMode = false;
   private systems: { name: string; fn: System }[] = [];
   private scratchPeds: Ped[] = [];
   private scratchVehicles: Vehicle[] = [];
@@ -81,6 +83,11 @@ export class World {
     resetPed(p, 'player', city.startX, city.startY, city.startAngle, 0);
     p.persistent = true;
     this.player = p;
+  }
+
+  /** True when p is the player and god mode is on. */
+  isGod(p: Ped): boolean {
+    return this.godMode && p === this.player;
   }
 
   addSystem(name: string, fn: System): void {

@@ -21,7 +21,7 @@ export function damagePed(w: World, p: Ped, amount: number, by: Ped | null, weap
   if (p.dead || amount <= 0) return;
   const ps = w.ps;
   if (p === w.player) {
-    if (ps.powerups.invuln > 0) return;
+    if (ps.powerups.invuln > 0 || w.godMode) return;
     if (weapon !== 'water') amount *= DIFFICULTY[w.difficulty].damageTaken;
     if (by === w.player) amount *= 0.5; // own explosions and fire hurt less
     w.playerHurtAt = w.time;

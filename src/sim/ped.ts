@@ -99,7 +99,7 @@ export function stepPedMovement(w: World, p: Ped, dt: number): void {
 }
 
 export function killPed(w: World, p: Ped, by: Ped | null, weapon: KillWeapon): void {
-  if (p.dead) return;
+  if (p.dead || w.isGod(p)) return;
   p.dead = true;
   p.health = 0;
   p.deadTime = 0;

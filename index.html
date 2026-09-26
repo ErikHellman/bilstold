@@ -32,6 +32,14 @@
       .panel td.key { color: #f1c40f; white-space: nowrap; }
       .panel .slider { display: grid; grid-template-columns: 130px 1fr 44px; gap: 8px; align-items: center; margin-top: 6px; }
       .panel .check { display: block; margin-top: 8px; }
+      .panel p.hint { margin: 2px 0 0; color: #666; font-size: 11px; font-style: italic; }
+      .panel.cheats { max-width: min(640px, 94vw); max-height: 80vh; overflow-y: auto; margin-top: 8vh; gap: 6px; }
+      .panel h3 { margin: 6px 0 0; color: #bbb; font-size: 13px; text-transform: uppercase; letter-spacing: 1px; }
+      .panel .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 6px; }
+      .panel .grid button { padding: 6px 8px; font-size: 13px; }
+      .panel button:disabled { opacity: .4; cursor: default; }
+      .panel .status { margin: 0; color: #f1c40f; min-height: 1.2em; }
+      .panel .note { margin: 0; color: #888; font-size: 12px; }
       #ui { align-items: flex-start; }
       #ui:empty { pointer-events: none; }
 

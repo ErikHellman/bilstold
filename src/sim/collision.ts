@@ -91,7 +91,7 @@ export function pedVsVehicle(w: World, p: Ped, v: Vehicle): void {
   const vn = v.vx * nx + v.vy * ny; // only the car's motion hurts; walking into a car just separates
   p.x += nx * (depth + 0.5);
   p.y += ny * (depth + 0.5);
-  if (v.wreck || vn <= 0) return;
+  if (v.wreck || vn <= 0 || w.isGod(p)) return;
   const by = v.driver;
   if (vn > 150 || (v.def.kind === 'tank' && vn > 20)) {
     w.bus.emit('blood', { x: p.x, y: p.y });
