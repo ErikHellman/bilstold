@@ -1,4 +1,4 @@
-export type Action = 'enter' | 'weaponNext' | 'weaponPrev' | 'radio' | 'map' | 'pause' | 'fire' | 'handbrake';
+export type Action = 'enter' | 'weaponNext' | 'weaponPrev' | 'radio' | 'map' | 'registry' | 'pause' | 'fire' | 'handbrake';
 
 export interface InputState {
   accel: number;
@@ -18,7 +18,7 @@ const HOLD: Record<string, 'up' | 'down' | 'left' | 'right' | 'fire' | 'handbrak
 };
 const EDGE: Record<string, Action> = {
   Enter: 'enter', KeyF: 'enter', KeyQ: 'weaponPrev', KeyE: 'weaponNext',
-  KeyR: 'radio', KeyM: 'map', Escape: 'pause', KeyP: 'pause',
+  KeyR: 'radio', KeyM: 'map', KeyC: 'registry', Escape: 'pause', KeyP: 'pause',
 };
 const PAD_EDGE: [number, Action][] = [[0, 'enter'], [4, 'weaponPrev'], [3, 'weaponNext'], [9, 'pause'], [8, 'map']];
 const DEADZONE = 0.2;

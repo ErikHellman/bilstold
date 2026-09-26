@@ -49,6 +49,8 @@ export class World {
   readonly systemsEnabled: Record<string, boolean> = {};
   /** Parking spots whose car was stolen or destroyed this session. */
   readonly takenSpots = new Set<string>();
+  /** Vehicle models the player has spotted on screen, across the whole playthrough. */
+  readonly discovered = new Set<VehicleModelId>();
   /** Landmark id → world time when the shop may trigger again. */
   readonly shopCooldowns = new Map<number, number>();
   mission: MissionRunner | null = null;

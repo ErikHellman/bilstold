@@ -26,7 +26,7 @@ export function hide() { uiRoot().replaceChildren(); }
 export const CONTROLS_HELP = [
   ['W / ↑', 'Accelerate / walk'], ['S / ↓', 'Brake / reverse'], ['A D / ← →', 'Steer / turn'], ['Space', 'Handbrake'],
   ['Ctrl / J', 'Fire'], ['Enter / F', 'Enter or exit car'], ['Q / E', 'Change weapon'], ['R', 'Radio station'],
-  ['M', 'Map'], ['Esc / P', 'Pause'], ['Gamepad', 'Stick steer, RT gas, LT brake, A car, X fire'],
+  ['M', 'Map'], ['C', 'Vehicle registry'], ['Esc / P', 'Pause'], ['Gamepad', 'Stick steer, RT gas, LT brake, A car, X fire'],
 ];
 
 export function controlsTable(): HTMLElement {
