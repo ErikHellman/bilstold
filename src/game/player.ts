@@ -35,7 +35,8 @@ export function controlPlayer(w: World, dt: number): void {
 
   if (p.ai.mode === 'enterCar') {
     const car = p.ai.targetCar;
-    const cancel = inp.pressed.has('enter') || inp.accel > 0 || inp.brake > 0 || Math.abs(inp.steer) > 0.3;
+    const cancel = inp.pressed.has('enter') || inp.accel > 0 || inp.brake > 0 || Math.abs(inp.steer) > 0.3
+      || Math.hypot(inp.moveX ?? 0, inp.moveY ?? 0) > 0.3;
     if (cancel || !car || !car.active || car.wreck) { cancelEnter(w); return; }
     const door = nearerDoor(car, p.x, p.y);
     const dx = door.x - p.x, dy = door.y - p.y, d = Math.hypot(dx, dy);
@@ -47,8 +48,16 @@ export function controlPlayer(w: World, dt: number): void {
     return;
   }
 
-  p.angle += inp.steer * TURN * dt;
-  const sp = inp.accel > 0 ? WALK * inp.accel : inp.brake > 0 ? -BACK * inp.brake : 0;
+  // Analog stick walks in the direction it points; keys and triggers keep the turn-and-walk scheme.
+  const mx = inp.moveX ?? 0, my = inp.moveY ?? 0, stick = Math.hypot(mx, my);
+  let sp: number;
+  if (stick > 0) {
+    p.angle = Math.atan2(my, mx);
+    sp = WALK * Math.min(1, stick);
+  } else {
+    p.angle += inp.steer * TURN * dt;
+    sp = inp.accel > 0 ? WALK * inp.accel : inp.brake > 0 ? -BACK * inp.brake : 0;
+  }
   p.vx = Math.cos(p.angle) * sp;
   p.vy = Math.sin(p.angle) * sp;
   p.anim += Math.abs(sp) * dt;

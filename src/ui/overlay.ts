@@ -17,7 +17,7 @@ export const uiRoot = () => document.getElementById('ui')!;
 export function show(panel: HTMLElement) {
   const root = uiRoot();
   root.replaceChildren(panel);
-  const first = panel.querySelector<HTMLElement>('[autofocus], button');
+  const first = panel.querySelector<HTMLElement>('[autofocus]') ?? panel.querySelector<HTMLElement>('button');
   first?.focus();
 }
 
@@ -26,7 +26,8 @@ export function hide() { uiRoot().replaceChildren(); }
 export const CONTROLS_HELP = [
   ['W / ↑', 'Accelerate / walk'], ['S / ↓', 'Brake / reverse'], ['A D / ← →', 'Steer / turn'], ['Space', 'Handbrake'],
   ['Ctrl / J', 'Fire'], ['Enter / F', 'Enter or exit car'], ['Q / E', 'Change weapon'], ['R', 'Radio station'],
-  ['M', 'Map'], ['C', 'Vehicle registry'], ['Esc / P', 'Pause'], ['Gamepad', 'Stick steer, RT gas, LT brake, A car, X fire'],
+  ['M', 'Map'], ['C', 'Vehicle registry'], ['Esc / P', 'Pause'], ['Gamepad', 'Left stick walk / steer, RT gas, LT brake, A car, X or RB fire, B handbrake, LB/Y weapon, Back map, Start pause'],
+  ['Gamepad menus', 'D-pad or stick to move, A select, B back'],
 ];
 
 export function controlsTable(): HTMLElement {
