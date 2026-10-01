@@ -21,6 +21,7 @@ The game has no runtime dependencies, and there are no image, audio or font file
 
 | Keyboard | Gamepad | Action |
 |---|---|---|
+| — | Left stick | Walk in the stick's direction (on foot) |
 | W / ↑ | RT | Accelerate / walk |
 | S / ↓ | LT | Brake / reverse |
 | A D / ← → | Left stick | Steer / turn |
@@ -31,6 +32,8 @@ The game has no runtime dependencies, and there are no image, audio or font file
 | R | — | Change radio station (in a car) |
 | M | Back | City map |
 | Esc / P | Start | Pause and settings |
+
+Gamepad buttons are named Xbox-style; on a PlayStation pad A = Cross, B = Circle, X = Square, Y = Triangle, Back = Create, Start = Options. In menus, move with the D-pad or left stick, select with A and go back with B.
 
 There is also a hidden cheats menu for weapons, power-ups, god mode and spawning any car. The title screen drops a hint about how to open it.
 

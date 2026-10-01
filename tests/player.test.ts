@@ -25,6 +25,13 @@ test('steering turns the player', () => {
   for (let n = 0; n < 30; n++) w.step(i, DT);
   expect(w.player.angle).toBeGreaterThan(1);
 });
+test('analog stick walks the player in the direction it points', () => {
+  const w = world(); const i = idle(); i.moveX = 0; i.moveY = 1;
+  const y0 = w.player.y;
+  for (let n = 0; n < 30; n++) w.step(i, DT);
+  expect(w.player.y).toBeGreaterThan(y0 + 20);
+  expect(w.player.angle).toBeCloseTo(Math.PI / 2);
+});
 test('enter nearest car, drive, exit onto walkable tile', () => {
   const w = world(); const v = w.spawnVehicle('sedan', 10 * TILE + 30, 10 * TILE, 0, 0, true)!;
   const i = idle(); i.pressed.add('enter'); w.step(i, DT);

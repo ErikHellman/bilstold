@@ -7,6 +7,7 @@ import { Input, type InputState } from './input/input';
 import { Renderer } from './render/renderer';
 import { DEFAULT_SETTINGS, readSave, restoreSession, safeStorage, writeSave, type SaveV1, type Settings } from './save/save';
 import { hide } from './ui/overlay';
+import { menuInput, syncGamepadClass } from './ui/padnav';
 import { showCityComplete, showPause } from './ui/pause';
 import { randomSeed, showTitle } from './ui/title';
 import { screenOnHide, type Screen } from './ui/screens';
@@ -132,9 +133,7 @@ function pause() {
   showPause({
     settings,
     onResume: resume,
-    onQuit: () => { save(); if (import.meta.env.DEV) addEventListener('keydown', e => { if (e.code === 'F3') renderer.debug.visible = !renderer.debug.visible; });
-
-openTitle(); },
+    onQuit: () => { save(); openTitle(); },
     onSettings: s => { settings = s; saveSettings(); audio.setVolumes(s); if (session) session.world.difficulty = s.difficulty; },
   });
 }
@@ -169,19 +168,15 @@ function resume() {
   audio.setActive(true);
 }
 
-/** Gamepad A activates the focused menu button (keyboard Enter/Space already does natively). */
-function pressFocusedButton(inp: InputState) {
-  if (!inp.pressed.has('enter') || input.lastDevice !== 'gamepad') return;
-  const el = document.activeElement;
-  if (el instanceof HTMLButtonElement) el.click();
-}
+const menu = (inp: InputState, onBack?: () => void) => menuInput(inp, input.lastDevice === 'gamepad', onBack);
 
 function step(dt: number) {
   const inp = input.poll();
+  syncGamepadClass(input.lastDevice === 'gamepad');
   switch (screen) {
     case 'title':
       attract?.world.step(idle, dt);
-      pressFocusedButton(inp);
+      menu(inp);
       break;
     case 'playing': {
       const w = session!.world;
@@ -204,18 +199,18 @@ function step(dt: number) {
       break;
     }
     case 'map':
-      if (inp.pressed.has('map') || inp.pressed.has('pause')) { screen = 'playing'; renderer.showMap = false; audio.setActive(true); }
+      if (inp.pressed.has('map') || inp.pressed.has('pause') || inp.pressed.has('back')) { screen = 'playing'; renderer.showMap = false; audio.setActive(true); }
       break;
     case 'registry':
-      if (inp.pressed.has('registry') || inp.pressed.has('pause')) { screen = 'playing'; renderer.showRegistry = false; audio.setActive(true); }
+      if (inp.pressed.has('registry') || inp.pressed.has('pause') || inp.pressed.has('back')) { screen = 'playing'; renderer.showRegistry = false; audio.setActive(true); }
       break;
     case 'paused':
     case 'cheats':
       if (inp.pressed.has('pause')) { resume(); break; }
-      pressFocusedButton(inp);
+      menu(inp, resume);
       break;
     case 'cityComplete':
-      pressFocusedButton(inp);
+      menu(inp);
       break;
   }
 }

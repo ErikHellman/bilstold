@@ -55,3 +55,53 @@ test('gamepad axes, triggers, edges and disconnect', () => {
   s = inp.poll();
   expect(s.steer).toBe(0); expect(s.accel).toBe(0);
 });
+test('left stick yields a deadzoned move vector', () => {
+  let pads: any[] = [pad([0, -1], [])];
+  const inp = new Input(new EventTarget(), () => pads);
+  let s = inp.poll();
+  expect(s.moveX).toBeCloseTo(0); expect(s.moveY).toBeCloseTo(-1); expect(s.accel).toBe(0);
+  pads = [pad([0.1, 0.1], [])];
+  s = inp.poll();
+  expect(s.moveX).toBe(0); expect(s.moveY).toBe(0);
+});
+test('prefers the standard-mapped pad over extra sensor devices', () => {
+  const sensors = { connected: true, mapping: '', axes: [0.9, 0.9, 0.9], buttons: [] };
+  const inp = new Input(new EventTarget(), () => [sensors, pad([0, 0], [7])]);
+  const s = inp.poll();
+  expect(s.accel).toBe(1); expect(s.steer).toBe(0);
+});
+test('d-pad and stick produce menu navigation with auto-repeat', () => {
+  let pads: any[] = [pad([0, 0], [13])];
+  const inp = new Input(new EventTarget(), () => pads);
+  expect(inp.poll().pressed.has('navDown')).toBe(true);
+  let repeats = 0;
+  for (let n = 0; n < 60; n++) if (inp.poll().pressed.has('navDown')) repeats++;
+  expect(repeats).toBeGreaterThanOrEqual(2); expect(repeats).toBeLessThanOrEqual(5);
+  pads = [pad([0.9, 0.1], [])];
+  expect(inp.poll().pressed.has('navRight')).toBe(true);
+  expect(inp.poll().pressed.has('navRight')).toBe(false);
+  pads = [pad([0, 0], [1])];
+  expect(inp.poll().pressed.has('back')).toBe(true);
+});
+test('pad still drives menus while a text field has focus, but not the game', () => {
+  let pads: any[] = [pad([0, 0], [])];
+  const inp = new Input(new EventTarget(), () => pads); inp.enabled = false;
+  inp.poll();
+  pads = [pad([0, 1], [0, 7, 4])];
+  const s = inp.poll();
+  expect(s.pressed.has('navDown')).toBe(true); expect(s.pressed.has('enter')).toBe(true);
+  expect(s.pressed.has('weaponPrev')).toBe(false); expect(s.accel).toBe(0); expect(s.moveY).toBe(0);
+});
+test('a pad button held across releaseAll does not fire again', () => {
+  let pads: any[] = [pad([0, 0], [])];
+  const inp = new Input(new EventTarget(), () => pads);
+  inp.poll();
+  pads = [pad([0, 0], [0, 13])];
+  expect(inp.poll().pressed.has('enter')).toBe(true);
+  inp.releaseAll();
+  const s = inp.poll();
+  expect(s.pressed.has('enter')).toBe(false); expect(s.pressed.has('navDown')).toBe(false);
+  pads = [pad([0, 0], [])]; inp.poll();
+  pads = [pad([0, 0], [0])];
+  expect(inp.poll().pressed.has('enter')).toBe(true);
+});
