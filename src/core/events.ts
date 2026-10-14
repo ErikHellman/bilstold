@@ -45,7 +45,7 @@ export interface GameEvents {
   exitCar: { vehicle: Vehicle };
   wasted: {};
   busted: {};
-  missionStart: { title: string };
+  missionStart: { title: string; brief?: { speaker: string; gang: number; lines: string[] } };
   missionEnd: { success: boolean; reward: number };
   phoneRing: { x: number; y: number };
   cityComplete: { index: number };

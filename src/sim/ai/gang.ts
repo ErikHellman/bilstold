@@ -7,6 +7,30 @@ import { armNpc, fireWeapon, npcAcquire } from '../combat';
 import type { Ped } from '../types';
 import type { World } from '../world';
 import { PED_AI } from './pedestrian';
+import { DRIVE_AI, laneTowards, steerTowards } from './traffic';
+import { speedOf } from '../vehicle';
+import type { Vehicle } from '../types';
+
+/** A gang hit squad in a car: rams the player's car; if the player is on foot, the crew jumps out and fights. */
+DRIVE_AI.hunt = (w, v, dt) => {
+  const pl = w.player, src = pl.vehicle ?? pl;
+  const dist = Math.hypot(src.x - v.x, src.y - v.y);
+  if ((!pl.vehicle && dist < 110) || v.ai.stuck > 2.5) { jumpOut(w, v); return; }
+  const see = dist < 260 && hasLineOfSight(w.city, v.x, v.y, src.x, src.y);
+  const aim = see ? { x: src.x + src.vx * 0.5, y: src.y + src.vy * 0.5 } : laneTowards(w, v, src.x, src.y);
+  steerTowards(v, aim.x, aim.y, v.def.maxSpeed * 0.9);
+  if (speedOf(v) < 15 && v.throttle > 0) v.ai.stuck += dt; else v.ai.stuck = Math.max(0, v.ai.stuck - dt);
+};
+
+function jumpOut(w: World, v: Vehicle) {
+  const d = v.driver;
+  v.ai.mode = 'none';
+  if (!d || d === w.player) return;
+  d.vehicle = null; v.driver = null;
+  d.x = v.x - Math.sin(v.angle) * (v.def.width / 2 + 8); d.y = v.y + Math.cos(v.angle) * (v.def.width / 2 + 8);
+  armGang(w, d);
+  Object.assign(d.ai, { mode: 'attack', target: w.player, timer: 60 });
+}
 
 const passable = (w: World, x: number, y: number) => {
   const t = tileAtWorld(w.city, x, y);

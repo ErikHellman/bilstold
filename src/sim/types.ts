@@ -23,7 +23,7 @@ export interface Ped {
   persistent: boolean;
 }
 
-export type DriveMode = 'none' | 'cruise' | 'flee' | 'chase' | 'respond' | 'block' | 'goto';
+export type DriveMode = 'none' | 'cruise' | 'flee' | 'chase' | 'respond' | 'block' | 'goto' | 'hunt';
 export interface DriveAI { mode: DriveMode; dir: number; turnedHere: boolean; lastTile: number; target: Ped | Vehicle | null; tx: number; ty: number; stuck: number; honk: number }
 export interface Vehicle {
   id: number; active: boolean; model: VehicleModelId; def: VehicleModel; color: number;
@@ -60,6 +60,8 @@ export interface PlayerState {
   missionsDone: number; kills: number; playTime: number;
   /** Jobs completed in the current city; drives mission difficulty. */
   cityMissions: number;
+  /** Storyline jobs done per gang in this city (0–5), and whether the city finale is won. */
+  story: number[]; finaleDone: boolean;
   /** Spot ids of one-shot pickups already taken in this city. */
   collected: number[];
   deathState: 'alive' | 'wasted' | 'busted'; deathTimer: number;

@@ -22,6 +22,10 @@
       .gamepad .panel :is(button, summary, input):focus { outline: 2px solid #f1c40f; outline-offset: 2px; }
       .panel button.primary { background: #f1c40f; color: #111; border-color: #f1c40f; font-weight: bold; }
       .panel .row { display: flex; gap: 8px; align-items: center; }
+      .panel.briefing .portrait { width: 96px; height: 96px; image-rendering: pixelated; border: 2px solid; flex: none; }
+      .panel.briefing .who { display: flex; flex-direction: column; gap: 2px; color: #999; font-size: 13px; }
+      .panel.briefing p { margin: 0; color: #ddd; line-height: 1.4; }
+      .panel.briefing p.job { color: #f1c40f; font-weight: bold; }
       .panel .progress { display: flex; flex-direction: column; gap: 4px; color: #ccc; font-size: 13px; }
       .panel .progress .bar { height: 6px; background: #23262d; border: 1px solid #555; }
       .panel .progress .bar div { height: 100%; background: #f1c40f; }

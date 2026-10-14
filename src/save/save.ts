@@ -47,7 +47,7 @@ export function serialize(s: Session, settings: Settings): SaveV1 {
   return {
     version: 1, seed: s.seedString, cityIndex: w.city.index, savedAt: Date.now(),
     ps: {
-      ...ps, weapons, wanted: { ...ps.wanted }, respect: [...ps.respect], powerups: { ...ps.powerups }, collected: [...ps.collected],
+      ...ps, weapons, wanted: { ...ps.wanted }, respect: [...ps.respect], powerups: { ...ps.powerups }, collected: [...ps.collected], story: [...ps.story],
     },
     player: { x: p.x, y: p.y, angle: p.angle, health: p.health, armor: p.armor },
     vehicle: v ? { model: v.model, color: v.color, health: v.health, angle: v.angle, carWeapon: v.carWeapon, carAmmo: v.carAmmo } : null,
@@ -102,6 +102,8 @@ export function validate(o: unknown): o is SaveV1 {
   if (!Array.isArray(ps.respect) || ps.respect.length !== 3 || !ps.respect.every(num)) return false;
   if (!obj(ps.powerups) || !['doubleDamage', 'fastReload', 'invuln', 'electroFingers'].every(k => num((ps.powerups as Record<string, unknown>)[k]))) return false;
   if (ps.cityMissions !== undefined && !num(ps.cityMissions)) return false;
+  if (ps.story !== undefined && (!Array.isArray(ps.story) || ps.story.length !== 3 || !ps.story.every(num))) return false;
+  if (ps.finaleDone !== undefined && typeof ps.finaleDone !== 'boolean') return false;
   if (typeof ps.jailFree !== 'boolean' || !Array.isArray(ps.collected) || !ps.collected.every(num)) return false;
   if (!['alive', 'wasted', 'busted'].includes(ps.deathState as string)) return false;
   for (const k of ['x', 'y', 'angle', 'health', 'armor']) if (!num(pl[k])) return false;
@@ -151,6 +153,7 @@ export function restoreSession(save: SaveV1): Session {
   w.ps = {
     ...save.ps, weapons, wanted: { ...save.ps.wanted }, respect: [...save.ps.respect], powerups: { ...save.ps.powerups },
     collected: [...save.ps.collected], deathState: 'alive', deathTimer: 0, cityMissions: save.ps.cityMissions ?? 0,
+    story: save.ps.story ? [...save.ps.story] : [0, 0, 0], finaleDone: save.ps.finaleDone ?? false,
   };
   const p = w.player;
   const at = findWalkableNear(w.city, save.player.x, save.player.y);

@@ -1,3 +1,4 @@
+import { chainsDone, FINALE_AFTER, liveStoryPhones, STORY_STEPS } from '../game/story/story';
 import type { World } from '../sim/world';
 import type { City } from '../world/citygen';
 import type { FogOfWar } from '../world/fog';
@@ -88,6 +89,14 @@ export function drawMap(ctx: Ctx, w: World, viewW: number, viewH: number, time: 
     ctx.fillStyle = '#000'; ctx.fillRect(p.x - 4, p.y - 5, 9, 10);
     drawText(ctx, m[0], p.x + 1, p.y - 3, m[1], 1, 'center', false);
   }
+  // storyline phones are always shown, fog or not
+  for (const l of liveStoryPhones(w)) {
+    const p = at(l.tx, l.ty), col = l.gang >= 0 ? c.gangs[l.gang].color : '#ff5252';
+    const blink = w.ringing.has(l.id) && Math.floor(time * 3) % 2 === 0;
+    ctx.fillStyle = '#000'; ctx.fillRect(p.x - 5, p.y - 5, 11, 11);
+    ctx.fillStyle = blink ? '#ffe14d' : col; ctx.fillRect(p.x - 4, p.y - 4, 9, 9);
+    drawText(ctx, l.gang >= 0 ? 'S' : 'F', p.x + 1, p.y - 3, '#000', 1, 'center', false);
+  }
   const tgt = w.mission?.target;
   if (tgt) {
     const p = at(tgt.x / 32 - 0.5, tgt.y / 32 - 0.5);
@@ -107,5 +116,14 @@ export function drawMap(ctx: Ctx, w: World, viewW: number, viewH: number, time: 
   drawText(ctx, '* phone', lx, ly, '#6fa8dc'); ly += 11;
   ly += 6;
   for (const g of c.gangs) { drawText(ctx, g.name, lx, ly, g.color); ly += 11; }
+  ly += 6;
+  drawText(ctx, 'STORY', lx, ly, '#f1c40f'); ly += 11;
+  for (const g of c.gangs) {
+    const n = w.ps.story[g.id] ?? 0;
+    drawText(ctx, `S ${n >= STORY_STEPS ? 'DONE' : `${n}/${STORY_STEPS}`}`, lx, ly, g.color);
+    ly += 11;
+  }
+  const left = FINALE_AFTER - chainsDone(w);
+  drawText(ctx, w.ps.finaleDone ? 'F WON' : left > 0 ? `F ${left} MORE TO GO` : 'F OPEN', lx, ly, '#ff5252');
   drawText(ctx, 'M / ESC: BACK', lx, oy + size - 8, '#888');
 }
