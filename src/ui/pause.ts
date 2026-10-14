@@ -9,6 +9,7 @@ export interface PauseOptions {
   onSettings: (s: Settings) => void;
   /** Progress through the current city, shown under the title. */
   progress?: { city: number; earned: number; goal: number; jobs: number };
+  stats?: [string, string][];
 }
 
 function slider(label: string, value: number, onchange: (v: number) => void) {
@@ -31,6 +32,10 @@ function progressLine(p: NonNullable<PauseOptions['progress']>) {
   bar.setAttribute('aria-valuenow', String(Math.round(frac * 100)));
   return el('div', { class: 'progress' },
     el('span', {}, `City ${p.city}: ${money(p.earned)} of ${money(p.goal)} · ${p.jobs} ${p.jobs === 1 ? 'job' : 'jobs'} done`), bar);
+}
+
+function statsTable(rows: [string, string][]): HTMLElement {
+  return el('table', { class: 'controls' }, ...rows.map(([k, v]) => el('tr', {}, el('td', { class: 'key' }, k), el('td', {}, v))));
 }
 
 export function showPause(o: PauseOptions): void {
@@ -56,15 +61,17 @@ export function showPause(o: PauseOptions): void {
       el('label', { class: 'check' },
         el('input', { type: 'checkbox', checked: s.batterySaver, onchange: (e: Event) => { s.batterySaver = (e.target as HTMLInputElement).checked; update(); } }),
         ' Battery saver (30 fps)')),
+    ...(o.stats ? [el('details', {}, el('summary', {}, 'Stats'), statsTable(o.stats))] : []),
     el('details', {}, el('summary', {}, 'Controls'), controlsTable()),
     el('button', { onclick: o.onQuit }, 'Save & quit to title'),
   );
   show(panel);
 }
 
-export function showCityComplete(index: number, name: string, next: string, onNext: () => void): void {
+export function showCityComplete(index: number, name: string, next: string, stats: [string, string][], onNext: () => void): void {
   show(el('div', { class: 'panel' },
     el('h2', {}, `${name} is yours!`),
     el('p', {}, `City ${index} complete. ${next} is waiting: same seed, new streets.`),
+    statsTable(stats),
     el('button', { class: 'primary', autofocus: true, onclick: onNext }, `Continue to ${next}`)));
 }

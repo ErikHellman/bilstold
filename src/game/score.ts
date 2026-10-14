@@ -21,6 +21,7 @@ export function registerScoring(w: World): void {
   });
   w.bus.on('vehicleDestroyed', e => {
     if (e.by !== w.player) return;
+    w.ps.wrecks++;
     addPoints(w, LAW_CARS.has(e.vehicle.def.role) ? POINTS.copCarDestroyed : POINTS.vehicleDestroyed);
   });
 }

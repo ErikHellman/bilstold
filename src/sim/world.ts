@@ -22,7 +22,8 @@ export function newPlayerState(): PlayerState {
     weapons: { fists: Infinity }, current: 'fists',
     wanted: { level: 0, heat: 0, unseen: 0 }, respect: [0, 0, 0],
     powerups: { doubleDamage: 0, fastReload: 0, invuln: 0, electroFingers: 0 }, jailFree: false,
-    missionsDone: 0, cityMissions: 0, story: [0, 0, 0], finaleDone: false, kills: 0, playTime: 0, collected: [], deathState: 'alive', deathTimer: 0,
+    missionsDone: 0, cityMissions: 0, story: [0, 0, 0], finaleDone: false,
+    packages: [], jobs: { taxi: 0, ambulance: 0, fire: 0, vigilante: 0 }, raceBest: {}, driven: [], wrecks: 0, stunts: 0, kills: 0, playTime: 0, collected: [], deathState: 'alive', deathTimer: 0,
   };
 }
 
@@ -56,6 +57,8 @@ export class World {
   readonly shopCooldowns = new Map<number, number>();
   mission: MissionRunner | null = null;
   frenzy: FrenzyState | null = null;
+  /** A side activity in progress (vehicle job or street race): what the HUD should point at. */
+  activity: { target: { x: number; y: number } | null; counter: string | null; timer: number | null } | null = null;
   /** Missions taken per payphone landmark id. */
   phoneCounts: Record<number, number> = {};
   /** Payphone landmark ids currently ringing. */

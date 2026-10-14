@@ -2,6 +2,7 @@ import type { VehicleModelId, VehicleModel } from '../game/data/vehicles';
 import type { WeaponId } from '../game/data/weapons';
 import type { PickupId } from '../game/data/pickups';
 
+export type VehicleJobKind = 'taxi' | 'ambulance' | 'fire' | 'vigilante';
 export type PedKind = 'player' | 'civ' | 'businessman' | 'elder' | 'criminal' | 'gang' | 'cop' | 'swat'
   | 'fbi' | 'soldier' | 'medic' | 'fireman' | 'target' | 'passenger';
 export type PedMode = 'idle' | 'wander' | 'flee' | 'chase' | 'attack' | 'enterCar' | 'drive' | 'arrest'
@@ -23,7 +24,7 @@ export interface Ped {
   persistent: boolean;
 }
 
-export type DriveMode = 'none' | 'cruise' | 'flee' | 'chase' | 'respond' | 'block' | 'goto' | 'hunt';
+export type DriveMode = 'none' | 'cruise' | 'flee' | 'chase' | 'respond' | 'block' | 'goto' | 'hunt' | 'race';
 export interface DriveAI { mode: DriveMode; dir: number; turnedHere: boolean; lastTile: number; target: Ped | Vehicle | null; tx: number; ty: number; stuck: number; honk: number }
 export interface Vehicle {
   id: number; active: boolean; model: VehicleModelId; def: VehicleModel; color: number;
@@ -62,6 +63,15 @@ export interface PlayerState {
   cityMissions: number;
   /** Storyline jobs done per gang in this city (0–5), and whether the city finale is won. */
   story: number[]; finaleDone: boolean;
+  /** Hidden package ids found in this city. */
+  packages: number[];
+  /** Vehicle side jobs done, per kind (they unlock perks at 10). */
+  jobs: Record<VehicleJobKind, number>;
+  /** Best street race times in seconds, keyed "city-flag". */
+  raceBest: Record<string, number>;
+  /** Vehicle models the player has driven. */
+  driven: string[];
+  wrecks: number; stunts: number;
   /** Spot ids of one-shot pickups already taken in this city. */
   collected: number[];
   deathState: 'alive' | 'wasted' | 'busted'; deathTimer: number;

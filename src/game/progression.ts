@@ -6,7 +6,11 @@ import { TUNING } from './tuning';
 export function gameOver(w: World): void {
   const start = w.ps.cityStartScore;
   const multiplier = Math.max(1, Math.floor(w.ps.multiplier / 2));
-  w.ps = Object.assign(newPlayerState(), { score: start, cityStartScore: start, lives: 4, multiplier });
+  const old = w.ps;
+  w.ps = Object.assign(newPlayerState(), {
+    score: start, cityStartScore: start, lives: 4, multiplier,
+    jobs: { ...old.jobs }, raceBest: { ...old.raceBest }, driven: [...old.driven], playTime: old.playTime,
+  });
   w.player.x = w.city.startX;
   w.player.y = w.city.startY;
   w.player.angle = w.city.startAngle;

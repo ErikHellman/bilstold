@@ -47,7 +47,7 @@ export function serialize(s: Session, settings: Settings): SaveV1 {
   return {
     version: 1, seed: s.seedString, cityIndex: w.city.index, savedAt: Date.now(),
     ps: {
-      ...ps, weapons, wanted: { ...ps.wanted }, respect: [...ps.respect], powerups: { ...ps.powerups }, collected: [...ps.collected], story: [...ps.story],
+      ...ps, weapons, wanted: { ...ps.wanted }, respect: [...ps.respect], powerups: { ...ps.powerups }, collected: [...ps.collected], story: [...ps.story], packages: [...ps.packages], jobs: { ...ps.jobs }, raceBest: { ...ps.raceBest }, driven: [...ps.driven],
     },
     player: { x: p.x, y: p.y, angle: p.angle, health: p.health, armor: p.armor },
     vehicle: v ? { model: v.model, color: v.color, health: v.health, angle: v.angle, carWeapon: v.carWeapon, carAmmo: v.carAmmo } : null,
@@ -104,6 +104,10 @@ export function validate(o: unknown): o is SaveV1 {
   if (ps.cityMissions !== undefined && !num(ps.cityMissions)) return false;
   if (ps.story !== undefined && (!Array.isArray(ps.story) || ps.story.length !== 3 || !ps.story.every(num))) return false;
   if (ps.finaleDone !== undefined && typeof ps.finaleDone !== 'boolean') return false;
+  if (ps.packages !== undefined && (!Array.isArray(ps.packages) || !ps.packages.every(num))) return false;
+  if (ps.jobs !== undefined && (!obj(ps.jobs) || !Object.values(ps.jobs).every(num))) return false;
+  if (ps.raceBest !== undefined && (!obj(ps.raceBest) || !Object.values(ps.raceBest).every(num))) return false;
+  if (ps.driven !== undefined && (!Array.isArray(ps.driven) || !ps.driven.every(m => typeof m === 'string'))) return false;
   if (typeof ps.jailFree !== 'boolean' || !Array.isArray(ps.collected) || !ps.collected.every(num)) return false;
   if (!['alive', 'wasted', 'busted'].includes(ps.deathState as string)) return false;
   for (const k of ['x', 'y', 'angle', 'health', 'armor']) if (!num(pl[k])) return false;
@@ -154,6 +158,8 @@ export function restoreSession(save: SaveV1): Session {
     ...save.ps, weapons, wanted: { ...save.ps.wanted }, respect: [...save.ps.respect], powerups: { ...save.ps.powerups },
     collected: [...save.ps.collected], deathState: 'alive', deathTimer: 0, cityMissions: save.ps.cityMissions ?? 0,
     story: save.ps.story ? [...save.ps.story] : [0, 0, 0], finaleDone: save.ps.finaleDone ?? false,
+    packages: [...(save.ps.packages ?? [])], jobs: { taxi: 0, ambulance: 0, fire: 0, vigilante: 0, ...(save.ps.jobs as Partial<PlayerState['jobs']> | undefined) },
+    raceBest: { ...save.ps.raceBest }, driven: [...(save.ps.driven ?? [])], wrecks: save.ps.wrecks ?? 0, stunts: save.ps.stunts ?? 0,
   };
   const p = w.player;
   const at = findWalkableNear(w.city, save.player.x, save.player.y);
