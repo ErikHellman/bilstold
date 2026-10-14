@@ -7,6 +7,8 @@ export interface PauseOptions {
   onResume: () => void;
   onQuit: () => void;
   onSettings: (s: Settings) => void;
+  /** Progress through the current city, shown under the title. */
+  progress?: { city: number; earned: number; goal: number; jobs: number };
 }
 
 function slider(label: string, value: number, onchange: (v: number) => void) {
@@ -16,6 +18,19 @@ function slider(label: string, value: number, onchange: (v: number) => void) {
     oninput: () => { out.textContent = `${input.value}%`; onchange(Number(input.value) / 100); },
   });
   return el('label', { class: 'slider' }, el('span', {}, label), input, out);
+}
+
+const money = (n: number) => `$${Math.max(0, Math.floor(n)).toLocaleString('en-US')}`;
+
+function progressLine(p: NonNullable<PauseOptions['progress']>) {
+  const frac = Math.min(1, Math.max(0, p.earned / p.goal));
+  const fill = el('div');
+  fill.style.width = `${(frac * 100).toFixed(1)}%`;
+  const bar = el('div', { class: 'bar' }, fill);
+  bar.setAttribute('role', 'progressbar');
+  bar.setAttribute('aria-valuenow', String(Math.round(frac * 100)));
+  return el('div', { class: 'progress' },
+    el('span', {}, `City ${p.city}: ${money(p.earned)} of ${money(p.goal)} · ${p.jobs} ${p.jobs === 1 ? 'job' : 'jobs'} done`), bar);
 }
 
 export function showPause(o: PauseOptions): void {
@@ -31,6 +46,7 @@ export function showPause(o: PauseOptions): void {
   }, label[d]));
   const panel = el('div', { class: 'panel' },
     el('h2', {}, 'Paused'),
+    ...(o.progress ? [progressLine(o.progress)] : []),
     el('button', { class: 'primary', autofocus: true, onclick: o.onResume }, 'Resume'),
     el('div', { class: 'row difficulty' }, el('span', {}, 'Difficulty'), ...diffButtons),
     el('details', {}, el('summary', {}, 'Settings'),

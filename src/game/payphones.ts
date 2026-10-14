@@ -3,6 +3,8 @@ import { landmarkCenter } from '../world/query';
 import { changeRespect, isHostile, RIVAL } from './gangs';
 import { generateMission } from './missions/generator';
 import { MissionRunner } from './missions/runner';
+import { addPoints } from './score';
+import { TUNING } from './tuning';
 
 /** Ringing phones hand out missions; finished missions pay out here. */
 export function payphoneSystem(w: World, dt: number): void {
@@ -14,18 +16,21 @@ export function payphoneSystem(w: World, dt: number): void {
     const m = w.mission;
     m.cleanup();
     w.mission = null;
+    let paid = 0;
     if (res === 'success') {
-      ps.score += m.spec.reward;
+      const mult = ps.multiplier;
+      paid = addPoints(w, m.spec.reward);
       ps.missionsDone++;
-      if (ps.missionsDone % 3 === 0) {
+      ps.cityMissions++;
+      if (ps.missionsDone % TUNING.missionsPerMultiplier === 0 && ps.multiplier < TUNING.multiplierCap) {
         ps.multiplier++;
         w.bus.emit('message', { text: `Multiplier x${ps.multiplier}!`, seconds: 3 });
       }
       if (m.spec.giver >= 0) { changeRespect(w, m.spec.giver, m.spec.respect); changeRespect(w, RIVAL(m.spec.giver), -m.spec.respect / 2); }
       w.bus.emit('message', { text: 'MISSION COMPLETE!', seconds: 3, big: true });
-      w.bus.emit('message', { text: `+$${m.spec.reward}`, seconds: 3 });
+      w.bus.emit('message', { text: mult > 1 ? `+$${paid} (x${mult})` : `+$${paid}`, seconds: 3 });
     } else w.bus.emit('message', { text: 'MISSION FAILED!', seconds: 3, big: true });
-    w.bus.emit('missionEnd', { success: res === 'success', reward: res === 'success' ? m.spec.reward : 0 });
+    w.bus.emit('missionEnd', { success: res === 'success', reward: paid });
     return;
   }
   if (w.tick % 60 === 0) {

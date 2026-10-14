@@ -40,7 +40,7 @@ test('multiplier affects points', () => {
 test('killing peds scores points', () => {
   const w = arena(); const c = w.spawnPed('civ', 100, 100, 0)!; const cop = w.spawnPed('cop', 120, 100, 0)!;
   killPed(w, c, w.player, 'pistol'); killPed(w, cop, w.player, 'pistol');
-  expect(w.ps.score).toBe(60); expect(w.ps.kills).toBe(2);
+  expect(w.ps.score).toBe(600); expect(w.ps.kills).toBe(2);
 });
 test('pickup placement is deterministic and on walkable tiles', () => {
   const c = generateCity(11, 1); const a = placePickups(c), b = placePickups(c);

@@ -3,6 +3,7 @@ import { speedOf } from '../sim/vehicle';
 import { landmarkCenter } from '../world/query';
 import { clearWanted } from './wanted';
 import { playerExit } from './player';
+import { addPoints } from './score';
 
 const PRICE = 5000;
 
@@ -43,8 +44,7 @@ export function shopsSystem(w: World): void {
         playerExit(w);
         w.bus.emit('crushed', { vehicle: v });
         w.removeVehicle(v);
-        ps.score += value;
-        say(`Crushed: +$${value}`);
+        say(`Crushed: +$${addPoints(w, value)}`);
         break;
       }
       case 'garage':

@@ -9,6 +9,7 @@ import { DEFAULT_SETTINGS, readSave, restoreSession, safeStorage, writeSave, typ
 import { hide } from './ui/overlay';
 import { menuInput, syncGamepadClass } from './ui/padnav';
 import { showCityComplete, showPause } from './ui/pause';
+import { cityGoal } from './game/progression';
 import { randomSeed, showTitle } from './ui/title';
 import { screenOnHide, type Screen } from './ui/screens';
 import { DIFFICULTIES } from './game/difficulty';
@@ -130,8 +131,10 @@ function startSession(s: Session) {
 function pause() {
   screen = 'paused';
   audio.setActive(false);
+  const w = session?.world;
   showPause({
     settings,
+    progress: w && { city: w.city.index, earned: w.ps.score - w.ps.cityStartScore, goal: cityGoal(w.city.index), jobs: w.ps.cityMissions },
     onResume: resume,
     onQuit: () => { save(); openTitle(); },
     onSettings: s => { settings = s; saveSettings(); audio.setVolumes(s); if (session) session.world.difficulty = s.difficulty; },

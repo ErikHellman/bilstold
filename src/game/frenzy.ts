@@ -1,6 +1,8 @@
 import type { World } from '../sim/world';
 import type { WeaponId } from './data/weapons';
 import { LAW_KINDS } from './wanted';
+import { addPoints } from './score';
+import { TUNING } from './tuning';
 
 export interface FrenzyState {
   weapon: WeaponId; need: number; kills: number; timer: number; target: 'any' | 'gang' | 'cop';
@@ -28,7 +30,7 @@ function end(w: World, success: boolean) {
     delete w.ps.weapons[f.weapon];
     if (w.ps.current === f.weapon) w.ps.current = 'fists';
   }
-  if (success) w.ps.score += 2000 * f.need;
+  if (success) addPoints(w, TUNING.frenzyPerKill * f.need);
   w.bus.emit('message', { text: success ? 'KILL FRENZY PASSED!' : 'FRENZY FAILED', seconds: 3, big: true });
   w.bus.emit('frenzyEnd', { success });
 }
