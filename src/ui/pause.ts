@@ -62,9 +62,9 @@ export function showPause(o: PauseOptions): void {
   show(panel);
 }
 
-export function showCityComplete(index: number, onNext: () => void): void {
+export function showCityComplete(index: number, name: string, next: string, onNext: () => void): void {
   show(el('div', { class: 'panel' },
-    el('h2', {}, `City ${index} complete!`),
-    el('p', {}, 'The next city is waiting — same seed, new streets.'),
-    el('button', { class: 'primary', autofocus: true, onclick: onNext }, `Continue to city ${index + 1}`)));
+    el('h2', {}, `${name} is yours!`),
+    el('p', {}, `City ${index} complete. ${next} is waiting: same seed, new streets.`),
+    el('button', { class: 'primary', autofocus: true, onclick: onNext }, `Continue to ${next}`)));
 }

@@ -47,7 +47,7 @@ test('traffic stops behind a stationary car', () => {
   expect(block.health).toBe(block.def.health);
 });
 test('pedestrians flee from gunshots', () => {
-  const w = createSession('flee', 1).world;
+  const w = createSession('b', 1).world;
   for (let i = 0; i < 120; i++) w.step(idle(), DT);
   const p = w.peds.items.find(p => p.active && p !== w.player && p.kind === 'civ' && !p.vehicle)!;
   const sx = p.x + 20, sy = p.y;

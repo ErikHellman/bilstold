@@ -19,6 +19,7 @@ import { showCheats } from './ui/cheats';
 import { showBriefing } from './ui/briefing';
 import { makePortrait } from './render/sprites/portraits';
 import { bossFor } from './game/story/characters';
+import { themeFor } from './world/themes';
 import type { GameEvents } from './core/events';
 
 const SETTINGS_KEY = 'bilstold.settings';
@@ -111,6 +112,9 @@ function startSession(s: Session) {
   renderer.showMap = false;
   renderer.showRegistry = false;
   renderer.setWorld(s.world);
+  const theme = s.world.city.theme;
+  renderer.hud.big = { text: theme.name.toUpperCase(), t: 3 };
+  renderer.hud.messages.push({ text: theme.tagline, t: 6 });
   input.enabled = true;
   input.releaseAll();
   hide();
@@ -126,7 +130,7 @@ function startSession(s: Session) {
       save();
       screen = 'cityComplete';
       audio.setActive(false);
-      showCityComplete(e.index, () => { const n = nextCity(s); startSession(n); save(); });
+      showCityComplete(e.index, s.world.city.theme.name, themeFor(e.index + 1).name, () => { const n = nextCity(s); startSession(n); save(); });
     }),
   ];
   expose(s);
@@ -271,6 +275,8 @@ function expose(s: Session) {
   const g = window as unknown as Record<string, unknown>;
   g.__w = s.world;
   g.__game = { get screen() { return screen; }, renderer, input, audio };
+  /** Dev only: jump straight to city N of the current seed. */
+  g.__city = (index: number) => startSession(createSession(s.seedString, index));
 }
 
 if (import.meta.env.DEV) addEventListener('keydown', e => { if (e.code === 'F3') renderer.debug.visible = !renderer.debug.visible; });
