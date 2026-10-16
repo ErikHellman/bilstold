@@ -1,3 +1,4 @@
+import { raceFlags } from '../game/activities/races';
 import { chainsDone, FINALE_AFTER, liveStoryPhones, STORY_STEPS } from '../game/story/story';
 import type { World } from '../sim/world';
 import type { City } from '../world/citygen';
@@ -89,6 +90,12 @@ export function drawMap(ctx: Ctx, w: World, viewW: number, viewH: number, time: 
     ctx.fillStyle = '#000'; ctx.fillRect(p.x - 4, p.y - 5, 9, 10);
     drawText(ctx, m[0], p.x + 1, p.y - 3, m[1], 1, 'center', false);
   }
+  for (const f of raceFlags(c)) {
+    if (!w.fog.isRevealed(Math.floor(f.x / 32), Math.floor(f.y / 32))) continue;
+    const p = at(f.x / 32 - 0.5, f.y / 32 - 0.5);
+    ctx.fillStyle = '#000'; ctx.fillRect(p.x - 4, p.y - 5, 9, 10);
+    drawText(ctx, 'R', p.x + 1, p.y - 3, '#fff', 1, 'center', false);
+  }
   // storyline phones are always shown, fog or not
   for (const l of liveStoryPhones(w)) {
     const p = at(l.tx, l.ty), col = l.gang >= 0 ? c.gangs[l.gang].color : '#ff5252';
@@ -114,6 +121,7 @@ export function drawMap(ctx: Ctx, w: World, viewW: number, viewH: number, time: 
   drawText(ctx, c.theme.name.toUpperCase(), lx, ly, '#f1c40f', 2); ly += 22;
   for (const [k2, [g, col]] of Object.entries(MARK)) { drawText(ctx, `${g} ${k2}`, lx, ly, col); ly += 11; }
   drawText(ctx, '* phone', lx, ly, '#6fa8dc'); ly += 11;
+  drawText(ctx, 'R race', lx, ly, '#fff'); ly += 11;
   ly += 6;
   for (const g of c.gangs) { drawText(ctx, g.name, lx, ly, g.color); ly += 11; }
   ly += 6;

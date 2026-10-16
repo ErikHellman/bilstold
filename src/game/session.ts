@@ -28,6 +28,7 @@ import { payphoneSystem } from './payphones';
 import { frenzySystem, registerFrenzy } from './frenzy';
 import { progressionSystem } from './progression';
 import { fogSystem } from './fog';
+import { registerActivities } from './activities';
 
 export interface Session { world: World; seedString: string }
 
@@ -47,6 +48,7 @@ export function nextCity(s: Session): Session {
   Object.assign(n.world.ps, {
     score: old.score, cityStartScore: old.score, lives: old.lives, multiplier: old.multiplier,
     weapons: { ...old.weapons }, current: old.current, missionsDone: old.missionsDone, kills: old.kills, playTime: old.playTime,
+    jobs: { ...old.jobs }, raceBest: { ...old.raceBest }, driven: [...old.driven], wrecks: old.wrecks, stunts: old.stunts,
   });
   for (const m of s.world.discovered) n.world.discovered.add(m);
   return n;
@@ -75,6 +77,7 @@ export function registerCoreSystems(w: World): void {
   w.addSystem('payphones', payphoneSystem);
   w.addSystem('frenzy', frenzySystem);
   w.addSystem('progression', progressionSystem);
+  registerActivities(w);
   registerScoring(w);
   registerCrimes(w);
   registerGangs(w);

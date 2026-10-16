@@ -206,7 +206,8 @@ export function respawnPlayer(w: World, kind: 'wasted' | 'busted'): void {
 /** Health slowly comes back up to REGEN_CAP after REGEN_DELAY seconds without taking damage. */
 export function regenSystem(w: World, dt: number): void {
   const p = w.player;
-  if (p.dead || w.ps.deathState !== 'alive' || p.health >= REGEN_CAP) return;
+  const cap = w.ps.jobs.ambulance >= 10 ? PLAYER_MAX_HEALTH : REGEN_CAP;
+  if (p.dead || w.ps.deathState !== 'alive' || p.health >= cap) return;
   if (w.time - w.playerHurtAt < REGEN_DELAY) return;
-  p.health = Math.min(REGEN_CAP, p.health + REGEN_RATE * dt);
+  p.health = Math.min(cap, p.health + REGEN_RATE * dt);
 }

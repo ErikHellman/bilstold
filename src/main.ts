@@ -20,6 +20,9 @@ import { showBriefing } from './ui/briefing';
 import { makePortrait } from './render/sprites/portraits';
 import { bossFor } from './game/story/characters';
 import { themeFor } from './world/themes';
+import { STORY_STEPS } from './game/story/story';
+import { PACKAGES_PER_CITY } from './game/activities/packages';
+import type { World } from './sim/world';
 import type { GameEvents } from './core/events';
 
 const SETTINGS_KEY = 'bilstold.settings';
@@ -130,7 +133,7 @@ function startSession(s: Session) {
       save();
       screen = 'cityComplete';
       audio.setActive(false);
-      showCityComplete(e.index, s.world.city.theme.name, themeFor(e.index + 1).name, () => { const n = nextCity(s); startSession(n); save(); });
+      showCityComplete(e.index, s.world.city.theme.name, themeFor(e.index + 1).name, statsOf(s.world), () => { const n = nextCity(s); startSession(n); save(); });
     }),
   ];
   expose(s);
@@ -143,6 +146,7 @@ function pause() {
   const w = session?.world;
   showPause({
     settings,
+    stats: w && statsOf(w),
     progress: w && { city: w.city.index, earned: w.ps.score - w.ps.cityStartScore, goal: cityGoal(w.city.index), jobs: w.ps.cityMissions },
     onResume: resume,
     onQuit: () => { save(); openTitle(); },
@@ -183,6 +187,22 @@ function brief(s: Session, title: string, b: NonNullable<GameEvents['missionStar
     portrait: makePortrait(gang ? bossFor(gang.name).look : null, gang?.color ?? '#f1c40f', b.gang + c.index),
     onDone: resume,
   });
+}
+
+function statsOf(w: World): [string, string][] {
+  const ps = w.ps, t = Math.floor(ps.playTime), j = ps.jobs;
+  const races = Object.entries(ps.raceBest).filter(([k]) => k.startsWith(`${w.city.index}-`)).map(([, v]) => `${v}s`);
+  return [
+    ['Play time', `${Math.floor(t / 3600)}h ${Math.floor((t % 3600) / 60)}m`],
+    ['Jobs done', `${ps.missionsDone} (${ps.cityMissions} in this city)`],
+    ['Storylines', `${ps.story.filter(n => n >= STORY_STEPS).length}/3${ps.finaleDone ? ', finale won' : ''}`],
+    ['Kills / wrecks', `${ps.kills} / ${ps.wrecks}`],
+    ['Hidden packages', `${ps.packages.length}/${PACKAGES_PER_CITY}`],
+    ['Race records', races.length ? races.join(', ') : 'none yet'],
+    ['Vehicle jobs', `taxi ${j.taxi}, ambulance ${j.ambulance}, fire ${j.fire}, vigilante ${j.vigilante}`],
+    ['Cars driven', `${ps.driven.length}`],
+    ['Stunts', `${ps.stunts}`],
+  ];
 }
 
 function resume() {

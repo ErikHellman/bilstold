@@ -71,6 +71,12 @@ After the third city the cycle starts again, with one more level of police each 
 - **Street life:** criminals mug people and steal cars. Ambulances revive the dead, and fire trucks put out fires.
 - **Storylines:** each gang's boss calls from a red-ringing phone (marked S on the map) with a five-job storyline, opened by a short briefing. Finish two storylines and a phone downtown (F) opens the city finale, which pays a quarter of the city goal.
 - **Missions:** jobs from ringing payphones. They include delivering cars, assassinations, car bombs, checkpoint races, destroying vehicles, taxi rides, the crusher, rampages, escorting someone past gang hit squads, chasing down a fleeing car, getting wanted stars and losing them, and holding a spot against waves of attackers.
+- **Between missions:**
+  - 20 hidden packages per city. Every 5 you find give you better gear each time you respawn.
+  - Getting into a taxi, ambulance, fire truck or police car starts that vehicle's side job. After 10 jobs of one kind you unlock a perk: an extra multiplier, full health regeneration, immunity to fire, or armor at every respawn.
+  - 3 street races per city start at the checkered flags (R on the map). Finishing in the top three pays, and your best time is saved.
+  - Drifts, near misses and clean getaways from three stars or more pay small bonuses, and so does driving each car model for the first time.
+  - The pause menu and the city complete screen show your stats.
 - **Radio:** four procedural stations play while you drive: *Radio Bilstöld*, *Hårdrock FM*, *Dansbandet* and *Lugna Favoriter*.
 
 ## Health, aiming and difficulty

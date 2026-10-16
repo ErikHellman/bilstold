@@ -4,7 +4,7 @@ import type { World } from '../sim/world';
 import { speedOf } from '../sim/vehicle';
 import { Camera } from './camera';
 import { ctx2d, type Ctx } from './canvas';
-import { drawPeds, drawPhones, drawPickups, drawProjectiles, drawVehicles } from './entities';
+import { drawActivityMarkers, drawPeds, drawPhones, drawPickups, drawProjectiles, drawVehicles } from './entities';
 import { HudState, drawHud } from './hud';
 import { drawMap } from './mapscreen';
 import { drawRegistry } from './registryscreen';
@@ -111,6 +111,7 @@ export class Renderer {
     this.ground.draw(ctx, cam);
     drawPickups(ctx, cam, w, this.icons);
     drawPhones(ctx, cam, w);
+    if (!this.attract) drawActivityMarkers(ctx, cam, w);
     drawPeds(ctx, cam, w, this.peds, true);
     drawVehicles(ctx, cam, w, this.cars, this.peds);
     if (!this.attract) this.discoverVisible(w);
@@ -131,9 +132,10 @@ export class Renderer {
     }
     this.hud.update(w, dt);
     const m = w.mission, f = w.frenzy;
-    this.hud.target = m?.target ?? null;
-    this.hud.timer = f ? f.timer : m && m.spec.timeLimit > 0 ? m.timer : null;
-    this.hud.counter = f ? `Kills ${f.kills}/${f.need}` : m?.counter ?? null;
+    const a = w.activity;
+    this.hud.target = m?.target ?? a?.target ?? null;
+    this.hud.timer = f ? f.timer : m ? (m.spec.timeLimit > 0 ? m.timer : null) : a?.timer ?? null;
+    this.hud.counter = f ? `Kills ${f.kills}/${f.need}` : m ? m.counter : a?.counter ?? null;
     drawHud(ctx, w, this.hud, this.icons, cam, now / 1000);
     this.ground.prefetch(cam, v ? v.vx : p.vx, v ? v.vy : p.vy);
     this.debug.frame(dt);

@@ -22,6 +22,7 @@ export function damagePed(w: World, p: Ped, amount: number, by: Ped | null, weap
   const ps = w.ps;
   if (p === w.player) {
     if (ps.powerups.invuln > 0 || w.godMode) return;
+    if ((weapon === 'fire' || weapon === 'flamer') && ps.jobs.fire >= 10) return; // firefighter perk
     if (weapon !== 'water') amount *= DIFFICULTY[w.difficulty].damageTaken;
     if (by === w.player) amount *= 0.5; // own explosions and fire hurt less
     w.playerHurtAt = w.time;

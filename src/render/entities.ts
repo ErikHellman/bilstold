@@ -1,4 +1,6 @@
 import { isStoryPhone } from '../game/story/story';
+import { packageSpots } from '../game/activities/packages';
+import { raceFlags } from '../game/activities/races';
 import type { World } from '../sim/world';
 import type { Ped } from '../sim/types';
 import type { Camera } from './camera';
@@ -152,5 +154,30 @@ export function drawPhones(ctx: Ctx, cam: Camera, w: World) {
       ctx.lineWidth = 2;
       ctx.beginPath(); ctx.arc(tmp.x, tmp.y, r, 0, Math.PI * 2); ctx.stroke();
     }
+  }
+}
+
+/** Hidden packages still to find, and the street race start flags. */
+export function drawActivityMarkers(ctx: Ctx, cam: Camera, w: World) {
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  const z = cam.zoom, found = w.ps.packages;
+  for (const p of packageSpots(w.city)) {
+    if (found.includes(p.id) || !inView(cam, p.x, p.y, 12)) continue;
+    cam.worldToScreen(p.x, p.y, tmp);
+    const bob = Math.sin(w.time * 3 + p.id) * 1.5 * z, s = 9 * z;
+    ctx.fillStyle = 'rgba(0,0,0,0.35)'; ctx.fillRect(tmp.x - s / 2 + 2, tmp.y - s / 2 + 2, s, s);
+    ctx.fillStyle = '#8b5a2b'; ctx.fillRect(tmp.x - s / 2, tmp.y - s / 2 + bob, s, s);
+    ctx.fillStyle = '#f1c40f'; ctx.fillRect(tmp.x - z, tmp.y - s / 2 + bob, 2 * z, s);
+  }
+  if (w.activity) return;
+  for (const f of raceFlags(w.city)) {
+    if (!inView(cam, f.x, f.y, 20)) continue;
+    cam.worldToScreen(f.x, f.y, tmp);
+    const c = 3 * z;
+    for (let i = 0; i < 4; i++) for (let j = 0; j < 3; j++) {
+      ctx.fillStyle = (i + j) % 2 ? '#111' : '#fff';
+      ctx.fillRect(tmp.x - 2 * c + i * c, tmp.y - 14 * z + j * c, c, c);
+    }
+    ctx.fillStyle = '#ddd'; ctx.fillRect(tmp.x - 2 * c - z, tmp.y - 14 * z, z, 16 * z);
   }
 }
