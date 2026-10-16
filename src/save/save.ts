@@ -101,6 +101,7 @@ export function validate(o: unknown): o is SaveV1 {
   if (!obj(ps.wanted) || !num(ps.wanted.level) || !num(ps.wanted.heat) || !num(ps.wanted.unseen)) return false;
   if (!Array.isArray(ps.respect) || ps.respect.length !== 3 || !ps.respect.every(num)) return false;
   if (!obj(ps.powerups) || !['doubleDamage', 'fastReload', 'invuln', 'electroFingers'].every(k => num((ps.powerups as Record<string, unknown>)[k]))) return false;
+  if (ps.cityMissions !== undefined && !num(ps.cityMissions)) return false;
   if (typeof ps.jailFree !== 'boolean' || !Array.isArray(ps.collected) || !ps.collected.every(num)) return false;
   if (!['alive', 'wasted', 'busted'].includes(ps.deathState as string)) return false;
   for (const k of ['x', 'y', 'angle', 'health', 'armor']) if (!num(pl[k])) return false;
@@ -149,7 +150,7 @@ export function restoreSession(save: SaveV1): Session {
   if (weapons.fists === undefined) weapons.fists = Infinity;
   w.ps = {
     ...save.ps, weapons, wanted: { ...save.ps.wanted }, respect: [...save.ps.respect], powerups: { ...save.ps.powerups },
-    collected: [...save.ps.collected], deathState: 'alive', deathTimer: 0,
+    collected: [...save.ps.collected], deathState: 'alive', deathTimer: 0, cityMissions: save.ps.cityMissions ?? 0,
   };
   const p = w.player;
   const at = findWalkableNear(w.city, save.player.x, save.player.y);

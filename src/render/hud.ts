@@ -1,5 +1,6 @@
 import { PLAYER_MAX_HEALTH, TILE } from '../core/const';
 import { WEAPONS } from '../game/data/weapons';
+import { cityGoal } from '../game/progression';
 import type { World } from '../sim/world';
 import type { Camera } from './camera';
 import type { Ctx } from './canvas';
@@ -69,6 +70,11 @@ export function drawHud(ctx: Ctx, w: World, hud: HudState, icons: Icons, cam: Ca
   // score + multiplier
   drawText(ctx, pad(ps.score, 7), 8, 6, '#f1c40f', 2);
   drawText(ctx, `X${ps.multiplier}`, 8 + textWidth('0000000', 2) + 6, 13, '#fff', 1);
+  // progress towards the city target, under the score
+  const bw = textWidth('0000000', 2), frac = Math.max(0, Math.min(1, (ps.score - ps.cityStartScore) / cityGoal(w.city.index)));
+  ctx.fillStyle = '#000'; ctx.fillRect(7, 21, bw + 2, 3);
+  ctx.fillStyle = '#444'; ctx.fillRect(8, 22, bw, 1);
+  ctx.fillStyle = '#6f6'; ctx.fillRect(8, 22, Math.round(bw * frac), 1);
   // hearts
   const hp = Math.max(0, p.health), per = PLAYER_MAX_HEALTH / 5;
   const low = hp < PLAYER_MAX_HEALTH * 0.25 && Math.floor(time * 4) % 2 === 0;

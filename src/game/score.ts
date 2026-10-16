@@ -1,13 +1,16 @@
 import type { World } from '../sim/world';
 import type { PedKind } from '../sim/types';
+import { TUNING } from './tuning';
 
-export const POINTS = { civKill: 10, gangKill: 25, copKill: 50, vehicleDestroyed: 100, copCarDestroyed: 250 };
+export const POINTS = TUNING.points;
 const LAW = new Set<PedKind>(['cop', 'swat', 'fbi', 'soldier']);
 const LAW_CARS = new Set(['police', 'swat', 'fbi', 'army']);
 
-/** Adds points scaled by the current multiplier. */
-export function addPoints(w: World, base: number): void {
-  w.ps.score += Math.round(base * w.ps.multiplier);
+/** Adds points scaled by the current multiplier and returns what was added. */
+export function addPoints(w: World, base: number): number {
+  const pts = Math.round(base * w.ps.multiplier);
+  w.ps.score += pts;
+  return pts;
 }
 
 export function registerScoring(w: World): void {

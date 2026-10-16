@@ -6,6 +6,7 @@ import { T, DIRS, DIR_VEC } from '../../world/tiles';
 import { VEHICLES, type VehicleModelId } from '../data/vehicles';
 import type { WeaponId } from '../data/weapons';
 import { RIVAL } from '../gangs';
+import { missionDifficulty, TUNING } from '../tuning';
 import { REWARD_FACTOR, TARGET_NAMES, type MissionKind, type MissionParams, type MissionSpec } from './templates';
 
 const curbCache = new WeakMap<City, number[]>();
@@ -45,7 +46,7 @@ const RAMPAGE_WEAPONS: WeaponId[] = ['pistol', 'smg', 'shotgun', 'flamer', 'elec
 
 export function generateMission(city: City, phone: Landmark, n: number, ps: PlayerState): MissionSpec {
   const r = makeRng(derive(city.seed, 'mission', city.index, phone.id, n));
-  const d = Math.min(5, 1 + Math.floor(ps.missionsDone / 3) + (city.index - 1));
+  const d = missionDifficulty(city.index, ps.cityMissions);
   const gangPhone = phone.gang >= 0;
   const enemy = gangPhone ? RIVAL(phone.gang) : Math.floor(r() * 3);
   const here = { x: phone.tx * TILE, y: phone.ty * TILE };
@@ -125,6 +126,6 @@ export function generateMission(city: City, phone: Landmark, n: number, ps: Play
       timeLimit = 0;
     }
   }
-  const reward = Math.round(((5000 + 2500 * d) * REWARD_FACTOR[kind]) / 100) * 100;
+  const reward = Math.round(((TUNING.missionBase + TUNING.missionPerDifficulty * d) * REWARD_FACTOR[kind]) / 100) * 100;
   return { id: `${phone.id}-${n}`, kind, title, giver: phone.gang, reward, respect: 10 + 2 * d, timeLimit, params };
 }

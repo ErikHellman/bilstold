@@ -40,7 +40,9 @@ There is also a hidden cheats menu for weapons, power-ups, god mode and spawning
 ## Seeds and saving
 
 - On the title screen you can type a seed (any text, including Swedish letters) or roll a random one. The same seed always builds the same city. `?seed=…` in the URL pre-fills the field.
-- Reaching a city's points target (1,000,000 × the city number) unlocks the next city, generated from the same seed.
+- Earning 1,000,000 × the city number on top of the score you arrived with unlocks the next city, generated from the same seed. A line under the score and the pause menu show how far you are.
+- Mission pay, kill points, car-crusher money and kill-frenzy bonuses are all scaled by your multiplier. Every 4 jobs raise it by one, up to ×4. Jobs get harder and pay more as you go, so a city takes about 20 jobs.
+- Running out of lives restarts the city from the score you arrived with, and halves your multiplier.
 - The game autosaves every 10 seconds, after each mission, and when the tab is hidden or closed. The save lives in `localStorage` under the key `bilstold.save`. It holds your seed, city, score, lives, weapons, car, wanted level, gang respect, active mission and settings.
 - The city itself is not saved; it is rebuilt from the seed. A corrupt save is discarded with a notice.
 

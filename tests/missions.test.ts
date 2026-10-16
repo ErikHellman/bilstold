@@ -2,7 +2,7 @@ import { createSession, nextCity } from '../src/game/session';
 import { generateMission } from '../src/game/missions/generator';
 import { MissionRunner } from '../src/game/missions/runner';
 import { startFrenzy } from '../src/game/frenzy';
-import { cityTarget } from '../src/game/progression';
+import { cityGoal, cityTarget } from '../src/game/progression';
 import { killPed } from '../src/sim/ped';
 import { landmarksOf } from '../src/world/query';
 import { isWalkable } from '../src/world/tiles';
@@ -39,15 +39,15 @@ test('checkpoint mission succeeds when checkpoints are visited and fails on time
   expect(res2).toBe('fail');
   r2.cleanup();
 });
-test('answering a ringing phone starts a mission; success pays reward and bumps multiplier every 3rd', () => {
-  const { world: w } = createSession('phone', 1); w.ps.missionsDone = 2; w.ps.multiplier = 1;
+test('answering a ringing phone starts a mission; success pays reward × multiplier and bumps the multiplier every 4th', () => {
+  const { world: w } = createSession('phone', 1); w.ps.missionsDone = 3; w.ps.multiplier = 2;
   const ph = landmarksOf(w.city, 'payphone').find(p => p.gang < 0)!;
   w.player.x = ph.tx * TILE + 16; w.player.y = ph.ty * TILE + 16;
   for (let i = 0; i < 180 && !w.mission; i++) w.step(idle(), DT);
   expect(w.mission).toBeTruthy();
   const reward = w.mission!.spec.reward; const s0 = w.ps.score;
   w.mission!.forceSuccess(); w.step(idle(), DT);
-  expect(w.ps.score).toBe(s0 + reward); expect(w.ps.multiplier).toBe(2); expect(w.mission).toBeNull();
+  expect(w.ps.score).toBe(s0 + 2 * reward); expect(w.ps.multiplier).toBe(3); expect(w.ps.cityMissions).toBe(1); expect(w.mission).toBeNull();
   expect(w.phoneCounts[ph.id]).toBe(1);
 });
 test('dying fails the active mission', () => {
@@ -82,11 +82,11 @@ test('frenzy fails when time runs out', () => {
 test('reaching the city target completes the city and nextCity carries progress', () => {
   const s = createSession('progress', 1); const w = s.world;
   let done = 0; w.bus.on('cityComplete', () => done++);
-  w.ps.score = cityTarget(1); w.ps.lives = 2; w.ps.multiplier = 3; w.ps.weapons.smg = 40; w.discovered.add('tank');
+  w.ps.score = cityTarget(w); w.ps.lives = 2; w.ps.multiplier = 3; w.ps.weapons.smg = 40; w.discovered.add('tank');
   w.step(idle(), DT); w.step(idle(), DT);
   expect(done).toBe(1);
   const n = nextCity(s);
-  expect(n.world.city.index).toBe(2); expect(n.world.ps.score).toBe(cityTarget(1)); expect(n.world.ps.cityStartScore).toBe(cityTarget(1));
+  expect(n.world.city.index).toBe(2); expect(n.world.ps.score).toBe(cityGoal(1)); expect(n.world.ps.cityStartScore).toBe(cityGoal(1));
   expect(n.world.ps.lives).toBe(2); expect(n.world.ps.multiplier).toBe(3); expect(n.world.ps.weapons.smg).toBe(40);
   expect(n.world.city.tiles).not.toEqual(w.city.tiles);
   expect(n.world.discovered.has('tank')).toBe(true);
