@@ -46,6 +46,18 @@ There is also a hidden cheats menu for weapons, power-ups, god mode and spawning
 - The game autosaves every 10 seconds, after each mission, and when the tab is hidden or closed. The save lives in `localStorage` under the key `bilstold.save`. It holds your seed, city, score, lives, weapons, car, wanted level, gang respect, active mission and settings.
 - The city itself is not saved; it is rebuilt from the seed. A corrupt save is discarded with a notice.
 
+## The cities
+
+Each city has its own look, gangs and traffic. The seed decides the street layout inside each theme.
+
+| City | Theme | What's different |
+|---|---|---|
+| 1. Hamnstaden | Harbour town in summer | Coastlines on two sides, ice-cream vans and mopeds, Hamn, Söder and Neon gangs |
+| 2. Bruksorten | Mill town in winter | Snow, icy roads where cars slide, factories, pickups and trucks, Järn, Rost and Norr gangs |
+| 3. Huvudstaden | The capital at night | Dark streets lit by lamps and headlights, a bigger downtown, sports cars and taxis, more police, Guld, Svart and Krom gangs |
+
+After the third city the cycle starts again, with one more level of police each time round.
+
 ## What's in the city
 
 - **Cars:** 17 vehicle types. Among them are taxis, buses, an ice-cream van, police, SWAT (*Insats*), secret police (*SÄPO*), ambulances, fire trucks, a moped and an army tank.

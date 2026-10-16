@@ -1,8 +1,10 @@
 import { MAP_SIZE } from '../core/const';
-import { type Rng, makeRng, derive, randInt, pick, chance } from '../core/rng';
+import { type Rng, makeRng, derive, randInt, chance } from '../core/rng';
 import type { VehicleModelId } from '../game/data/vehicles';
 import { T, D, DIR, DIRS, DIR_VEC } from './tiles';
-import { gangNames } from './gangnames';
+import { themedGangNames } from './gangnames';
+import { themeFor, type Theme } from './themes';
+export type { Theme } from './themes';
 import { placeLandmarks } from './landmarks';
 import { streetPose } from './query';
 
@@ -13,14 +15,14 @@ export interface City {
   seed: number; index: number; size: number;
   tiles: Uint8Array; height: Uint8Array; roadDir: Uint8Array; district: Uint8Array; gangZone: Uint8Array;
   landmarks: Landmark[]; gangs: GangDef[];
+  /** Look and feel of this city (see world/themes.ts). */
+  theme: Theme;
   /** World units, on a sidewalk tile. */
   startX: number; startY: number;
   /** Facing for a new game: straight out from the building behind the start tile. */
   startAngle: number;
 }
 
-export const GANG_COLORS = ['#e8c547', '#4fb3e8', '#d9534f'];
-const GANG_CARS: VehicleModelId[] = ['muscle', 'sports', 'pickup', 'van', 'sedan'];
 /** Ring road inset from the map edge. */
 export const RING = 8;
 
@@ -32,7 +34,7 @@ export function generateCity(seed: number, index: number): City {
   const c: City = {
     seed, index, size,
     tiles: new Uint8Array(n).fill(T.Grass), height: new Uint8Array(n), roadDir: new Uint8Array(n),
-    district: new Uint8Array(n), gangZone: new Uint8Array(n), landmarks: [], gangs: [], startX: 0, startY: 0, startAngle: 0,
+    district: new Uint8Array(n), gangZone: new Uint8Array(n), landmarks: [], gangs: [], startX: 0, startY: 0, startAngle: 0, theme: themeFor(index),
   };
   const R = (step: string) => makeRng(derive(seed, 'city', index, step));
   const water = placeWater(c, R('water'));
@@ -60,7 +62,7 @@ function placeWater(c: City, r: Rng): WaterInfo {
   const { size } = c;
   const coasts: number[] = [];
   const edges = [0, 1, 2, 3]; // 0 = north, 1 = east, 2 = south, 3 = west
-  const count = randInt(r, 1, 2);
+  const count = randInt(r, c.theme.coasts[0], c.theme.coasts[1]);
   for (let i = 0; i < count; i++) coasts.push(edges.splice(Math.floor(r() * edges.length), 1)[0]);
   for (const edge of coasts) {
     let depth = randInt(r, 3, 6);
@@ -73,7 +75,7 @@ function placeWater(c: City, r: Rng): WaterInfo {
     }
   }
   let river: WaterInfo['river'] = null;
-  if (chance(r, 0.6)) {
+  if (chance(r, c.theme.riverChance)) {
     const vertical = chance(r, 0.5);
     const w = randInt(r, 3, 4);
     const p0 = randInt(r, 40, size - 40 - w);
@@ -98,12 +100,13 @@ function assignDistricts(c: City, r: Rng, coasts: number[]): Pt[] {
   for (let i = 0; i < 14; i++) pts.push({ x: randInt(r, RING, size - RING), y: randInt(r, RING, size - RING), kind: 0 });
   const mid = size / 2;
   const byCenter = pts.map((p, i) => [Math.hypot(p.x - mid, p.y - mid), i]).sort((a, b) => a[0] - b[0]);
-  const downtown = new Set(byCenter.slice(0, 3).map(e => e[1]));
+  const downtown = new Set(byCenter.slice(0, c.theme.downtown).map(e => e[1]));
+  const odds = c.theme.districtOdds;
   pts.forEach((p, i) => {
     const nearCoast = coasts.some(e => (e === 0 ? p.y : e === 1 ? size - p.x : e === 2 ? size - p.y : p.x) < 20);
     if (downtown.has(i)) p.kind = D.Downtown;
     else if (nearCoast) p.kind = D.Waterfront;
-    else { const v = r(); p.kind = v < 0.5 ? D.Residential : v < 0.8 ? D.Industrial : D.Park; }
+    else { const v = r(); p.kind = v < odds.residential ? D.Residential : v < odds.residential + odds.industrial ? D.Industrial : D.Park; }
   });
   for (let y = 0; y < size; y++)
     for (let x = 0; x < size; x++) c.district[y * size + x] = pts[nearest(pts, x, y)].kind;
@@ -370,8 +373,8 @@ function assignGangs(c: City, r: Rng, pts: Pt[]) {
       }
   const { size } = c;
   for (let y = 0; y < size; y++) for (let x = 0; x < size; x++) c.gangZone[y * size + x] = nearest(best, x, y);
-  const names = gangNames(r);
-  c.gangs = [0, 1, 2].map(i => ({ id: i, name: names[i], color: GANG_COLORS[i], carModel: pick(r, GANG_CARS) }));
+  const t = c.theme, names = themedGangNames(r, t.gangPrefixes);
+  c.gangs = [0, 1, 2].map(i => ({ id: i, name: names[i], color: t.gangColors[i], carModel: t.gangCars[i] }));
 }
 
 const dist = (a: Pt, b: Pt) => Math.hypot(a.x - b.x, a.y - b.y);

@@ -84,7 +84,7 @@ export function stepVehicle(v: Vehicle, dt: number, city: City, bus: Bus<GameEve
     const turnFactor = def.kind === 'tank' ? Math.max(0.5, Math.min(1, Math.abs(fwd) / 50)) : Math.min(1, Math.abs(fwd) / 50);
     const dirSign = def.kind === 'tank' && Math.abs(fwd) < 5 ? 1 : Math.sign(fwd);
     v.angVel = v.steer * def.turn * turnFactor * dirSign * (v.handbrake ? 1.6 : 1);
-    const grip = (v.handbrake ? 0.15 : 1) * def.grip * gripFactor(v);
+    const grip = (v.handbrake ? 0.15 : 1) * def.grip * gripFactor(v) * city.theme.grip;
     lat *= Math.max(0, 1 - grip * dt);
     if (Math.abs(lat) > 70 && ++v.skid % 3 === 0) bus.emit('skid', { x: v.x, y: v.y, angle: v.angle });
 

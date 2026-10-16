@@ -11,6 +11,13 @@ const CHUNK = 16;
 
 export interface ParkSpot { key: string; x: number; y: number; angle: number; model: VehicleModelId; color: number }
 
+/** District traffic weights times the city theme's. */
+function boostFor(c: City, district: number): Partial<Record<VehicleModelId, number>> {
+  const b: Partial<Record<VehicleModelId, number>> = { ...c.theme.traffic };
+  for (const [m, k] of Object.entries(TRAFFIC_BOOST[district] ?? {})) b[m as VehicleModelId] = (b[m as VehicleModelId] ?? 1) * k;
+  return b;
+}
+
 /** Weighted pick from the civilian traffic catalogue. */
 export function pickCivModel(r: Rng, boost: Partial<Record<VehicleModelId, number>> = {}): VehicleModelId {
   let total = 0;
@@ -53,7 +60,7 @@ export function parkSpots(city: City, cx: number, cy: number): ParkSpot[] {
     if (out.length >= want) break;
     const x = c.tx * TILE + TILE / 2 + c.ox, y = c.ty * TILE + TILE / 2 + c.oy;
     if (out.some(o => Math.hypot(o.x - x, o.y - y) < 60)) continue;
-    const model = pickCivModel(r, { bus: 0, truck: 0.3 });
+    const model = pickCivModel(r, { ...city.theme.traffic, bus: 0, truck: 0.3 * (city.theme.traffic.truck ?? 1) });
     const color = Math.floor(r() * VEHICLES[model].colors.length);
     out.push({ key: `${c.tx},${c.ty}`, x, y, angle: c.angle + (r() < 0.5 ? Math.PI : 0), model, color });
   }
@@ -161,7 +168,7 @@ export class Population {
       const gang = c.gangs[c.gangZone[i]];
       const patrol = w.rng() < 0.03;
       const gangCar = !patrol && gang && w.rng() < 0.2;
-      const model = patrol ? 'police' : gangCar ? gang.carModel : pickCivModel(w.rng, TRAFFIC_BOOST[district]);
+      const model = patrol ? 'police' : gangCar ? gang.carModel : pickCivModel(w.rng, boostFor(w.city, district));
       const color = gangCar ? 0 : Math.floor(w.rng() * VEHICLES[model].colors.length);
       const angle = DIR_ANGLE[flags];
       const v = w.spawnVehicle(model, x, y, angle, color, false);

@@ -111,7 +111,7 @@ export function drawMap(ctx: Ctx, w: World, viewW: number, viewH: number, time: 
   // legend
   let ly = oy + 4;
   const lx = ox + size + 12;
-  drawText(ctx, 'MAP', lx, ly, '#f1c40f', 2); ly += 22;
+  drawText(ctx, c.theme.name.toUpperCase(), lx, ly, '#f1c40f', 2); ly += 22;
   for (const [k2, [g, col]] of Object.entries(MARK)) { drawText(ctx, `${g} ${k2}`, lx, ly, col); ly += 11; }
   drawText(ctx, '* phone', lx, ly, '#6fa8dc'); ly += 11;
   ly += 6;

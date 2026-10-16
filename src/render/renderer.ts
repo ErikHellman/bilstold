@@ -17,13 +17,16 @@ import { Particles } from './particles';
 import { GroundCache } from './groundcache';
 import { makePedSprites, type PedSprites } from './sprites/peds';
 import { makeTileTextures, type TileTextures } from './sprites/tiles';
+import { NightLayer } from './night';
+import type { ThemeId } from '../world/themes';
 
 export class Renderer {
   readonly ctx: Ctx;
   readonly cam = new Camera(VIEW_W, 360);
   world: World | null = null;
   ground: GroundCache | null = null;
-  private tiles: TileTextures = makeTileTextures();
+  private tileSets = new Map<ThemeId, TileTextures>();
+  private night = new NightLayer();
   private peds: PedSprites = makePedSprites();
   private cars = new CarSprites();
   readonly particles = new Particles();
@@ -61,7 +64,10 @@ export class Renderer {
     this.unsub = [];
     this.world = w;
     this.hud.attach(w);
-    const g = new GroundCache(w.city, this.tiles);
+    const theme = w.city.theme.id;
+    let tiles = this.tileSets.get(theme);
+    if (!tiles) { tiles = makeTileTextures(theme); this.tileSets.set(theme, tiles); }
+    const g = new GroundCache(w.city, tiles);
     this.ground = g;
     this.cam.snap(w.player.x, w.player.y);
     this.unsub.push(
@@ -113,6 +119,7 @@ export class Renderer {
     this.emitAmbient(w, dt);
     this.particles.update(dt);
     this.particles.draw(ctx, cam);
+    if (w.city.theme.night) this.night.draw(ctx, cam, w);
     cam.apply(ctx);
     drawBuildings(ctx, cam, w.city);
     if (this.attract) {

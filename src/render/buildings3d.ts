@@ -24,6 +24,13 @@ const SIGN: Partial<Record<LandmarkKind, [string, string]>> = {
   crusher: ['#', '#bdc3c7'], garage: ['G', '#f1c40f'], gangHQ: ['!', '#fff'],
 };
 
+/** Blends two #rrggbb colours: t = 0 gives a, t = 1 gives b. */
+function mix(a: string, b: string, t: number): string {
+  const p = parseInt(a.slice(1), 16), q = parseInt(b.slice(1), 16);
+  const ch = (s: number) => Math.round(((p >> s) & 255) * (1 - t) + ((q >> s) & 255) * t);
+  return `#${((ch(16) << 16) | (ch(8) << 8) | ch(0)).toString(16).padStart(6, '0')}`;
+}
+
 interface Item { i: number; d: number }
 const items: Item[] = [];
 const signAt = new Map<number, [string, string]>();
@@ -46,6 +53,7 @@ function buildSigns(city: City) {
 /** Pseudo-3D pass: roofs lean away from the camera centre in proportion to height. */
 export function drawBuildings(ctx: Ctx, cam: Camera, city: City): void {
   if (signCity !== city) buildSigns(city);
+  const look = { snow: city.theme.snow, night: city.theme.night, wall: city.theme.night ? 0.55 : 1 };
   const r = cam.visibleRect();
   const { size, tiles, height } = city;
   const pad = 6 * TILE;
@@ -72,7 +80,7 @@ export function drawBuildings(ctx: Ctx, cam: Camera, city: City): void {
     const district = city.district[i];
     const x0 = tx * TILE, y0 = ty * TILE, x1 = x0 + TILE, y1 = y0 + TILE;
     const lift = (px: number, py: number, hh: number) => [px + ((px - cx) * hh) / EYE, py + ((py - cy) * hh) / EYE];
-    const wall = WALL[district] ?? '#999';
+    const wall = shade(WALL[district] ?? '#999', look.wall);
     // [neighbour dx, dy, edge corners, visible when camera beyond edge, shade]
     const edges: [number, number, number, number, number, number, boolean, number][] = [
       [0, -1, x0, y0, x1, y0, cy < y0, 0.55],
@@ -93,13 +101,15 @@ export function drawBuildings(ctx: Ctx, cam: Camera, city: City): void {
       ctx.fill();
       // window rows
       const floors = Math.round((h - nh) / FLOOR);
-      ctx.fillStyle = district === D.Residential ? 'rgba(40,50,70,0.55)' : 'rgba(30,45,70,0.6)';
+      const unlit = district === D.Residential ? 'rgba(40,50,70,0.55)' : 'rgba(30,45,70,0.6)';
+      ctx.fillStyle = unlit;
       for (let k = 0; k < floors; k++) {
         const t0 = (nh + (k + 0.35) * FLOOR) / 1, t1 = (nh + (k + 0.7) * FLOOR) / 1;
         const [p0x, p0y] = lift(ax, ay, t0), [q0x, q0y] = lift(bx, by, t0);
         const [p1x, p1y] = lift(ax, ay, t1), [q1x, q1y] = lift(bx, by, t1);
         for (let s = 0; s < 3; s++) {
           const u0 = 0.12 + s * 0.3, u1 = u0 + 0.18;
+          if (look.night) ctx.fillStyle = hash01(i * 7 + k, s + ndx * 3 + ndy * 5) < 0.45 ? '#ffd27a' : unlit;
           ctx.beginPath();
           ctx.moveTo(p0x + (q0x - p0x) * u0, p0y + (q0y - p0y) * u0);
           ctx.lineTo(p0x + (q0x - p0x) * u1, p0y + (q0y - p0y) * u1);
@@ -113,7 +123,8 @@ export function drawBuildings(ctx: Ctx, cam: Camera, city: City): void {
     const [rx0, ry0] = lift(x0, y0, h), [rx1, ry1] = lift(x1, y1, h);
     const palette = ROOF[district] ?? ROOF[D.Downtown];
     const block = (Math.floor(tx / 3) * 7 + Math.floor(ty / 3) * 13 + height[i]) | 0;
-    const roof = palette[Math.floor(hash01(block, district) * palette.length)];
+    const base = palette[Math.floor(hash01(block, district) * palette.length)];
+    const roof = look.snow ? mix(base, '#eef3f6', 0.78) : look.night ? shade(base, 0.38) : base;
     ctx.fillStyle = roof;
     ctx.fillRect(rx0, ry0, rx1 - rx0 + 0.5, ry1 - ry0 + 0.5);
     ctx.fillStyle = shade(roof, 0.75);

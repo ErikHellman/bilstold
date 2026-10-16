@@ -265,7 +265,7 @@ export function policeSystem(w: World, dt: number): void {
   s.spawnTimer -= dt;
   if (s.spawnTimer <= 0) {
     s.spawnTimer = 1.5;
-    const want = DESIRED[Math.min(6, level)], have = countUnits(w);
+    const want = DESIRED[Math.min(6, level + w.city.theme.policeBoost)], have = countUnits(w);
     for (const u of Object.keys(want) as Unit[]) if (have[u] < (want[u] ?? 0) && spawnUnit(w, u, level)) break;
   }
   if (level >= 3) {
