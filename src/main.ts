@@ -14,6 +14,7 @@ import { randomSeed, showTitle } from './ui/title';
 import { screenOnHide, type Screen } from './ui/screens';
 import { DIFFICULTIES } from './game/difficulty';
 import { CheatCode } from './input/cheatcode';
+import { isTouchDevice, TouchControls } from './input/touch';
 import { giveWeapon, givePowerup, loseTheCops, refillAmmo, setGodMode, spawnCarNear } from './game/cheats';
 import { showCheats } from './ui/cheats';
 import { showBriefing } from './ui/briefing';
@@ -32,6 +33,7 @@ const canvas = document.getElementById('game') as HTMLCanvasElement;
 const input = new Input(window);
 const renderer = new Renderer(canvas);
 const store = safeStorage();
+const touch = isTouchDevice() ? new TouchControls(input) : null;
 
 let settings: Settings = loadSettings();
 let screen: Screen = 'title';
@@ -58,7 +60,8 @@ function loadSettings(): Settings {
       return s;
     }
   } catch { /* fall back to defaults */ }
-  return { ...DEFAULT_SETTINGS };
+  // Phones run hot at 60 fps; start them on the battery saver.
+  return { ...DEFAULT_SETTINGS, batterySaver: isTouchDevice() };
 }
 
 function saveSettings() { store.set(SETTINGS_KEY, JSON.stringify(settings)); }
@@ -217,6 +220,7 @@ const menu = (inp: InputState, onBack?: () => void) => menuInput(inp, input.last
 function step(dt: number) {
   const inp = input.poll();
   syncGamepadClass(input.lastDevice === 'gamepad');
+  touch?.setMode(screen === 'playing' ? 'playing' : screen === 'map' || screen === 'registry' ? 'overlay' : 'hidden');
   switch (screen) {
     case 'title':
       attract?.world.step(idle, dt);

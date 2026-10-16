@@ -35,6 +35,8 @@ The game has no runtime dependencies, and there are no image, audio or font file
 
 Gamepad buttons are named Xbox-style; on a PlayStation pad A = Cross, B = Circle, X = Square, Y = Triangle, Back = Create, Start = Options. In menus, move with the D-pad or left stick, select with A and go back with B.
 
+On phones and tablets (landscape) the game shows touch controls: put a thumb anywhere on the left half for a floating stick, which walks you where it points and, in a car, drives towards where it points (point behind the car to reverse). The right side has Fire, Enter, Drift (handbrake), Brake and Gun (next weapon); Pause, Map and Radio sit along the top. Tap anywhere to close the map. Touch devices start with the battery saver on. Add `?touch=1` to the URL to try the touch controls on a desktop.
+
 There is also a hidden cheats menu for weapons, power-ups, god mode and spawning any car. The title screen drops a hint about how to open it.
 
 ## Seeds and saving
@@ -98,7 +100,7 @@ In dev builds, F3 shows a performance overlay. On a laptop the simulation takes 
 
 ## Known limits
 
-- Desktop only: keyboard or gamepad, no touch controls.
+- Touch play needs landscape; in portrait the game asks you to turn the device.
 - No building interiors, bridges over roads, or multiplayer.
 - Traffic AI is deliberately simple and can jam.
 

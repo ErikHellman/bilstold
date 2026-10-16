@@ -5,6 +5,7 @@ import { fireWeapon } from '../sim/combat';
 import { FOOT_WEAPONS, type WeaponId } from './data/weapons';
 import { findWalkableNear, nearestLandmark, streetPose, tileAt, tileAtWorld } from '../world/query';
 import { PLAYER_MAX_HEALTH, REGEN_CAP, REGEN_DELAY, REGEN_RATE, TILE } from '../core/const';
+import { angleDiff } from '../core/math';
 
 /** Seconds of invulnerability after respawning. */
 const SPAWN_PROTECTION = 3;
@@ -26,6 +27,14 @@ export function controlPlayer(w: World, dt: number): void {
   const v = p.vehicle;
   if (v) {
     v.throttle = inp.accel; v.brake = inp.brake; v.steer = inp.steer; v.handbrake = inp.handbrake;
+    const mx = inp.moveX ?? 0, my = inp.moveY ?? 0, stick = Math.hypot(mx, my);
+    if (inp.absolute && stick > 0) {
+      // touch: drive towards where the stick points; pointing behind the car reverses
+      const diff = angleDiff(v.angle, Math.atan2(my, mx));
+      const back = Math.abs(diff) > 2.3;
+      v.steer = Math.max(-1, Math.min(1, (back ? -angleDiff(v.angle + Math.PI, Math.atan2(my, mx)) : diff) * 2.5));
+      if (!inp.brake) { v.throttle = back ? 0 : stick; v.brake = back ? stick : 0; }
+    }
     p.x = v.x; p.y = v.y; p.angle = v.angle;
     if (inp.fire && v.carWeapon) fireWeapon(w, p, v.carWeapon, v);
     if (inp.pressed.has('enter')) playerExit(w);

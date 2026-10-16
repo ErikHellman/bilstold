@@ -13,6 +13,8 @@ export interface InputState {
   /** Left analog stick in screen space (x right, y down), deadzoned; 0/absent when centred. Gamepad only. */
   moveX?: number;
   moveY?: number;
+  /** Touch stick: in a car, point where you want to go instead of steering left and right. */
+  absolute?: boolean;
   /** Edge-triggered actions for this tick. */
   pressed: Set<Action>;
 }
@@ -45,7 +47,9 @@ type NavAction = 'navUp' | 'navDown' | 'navLeft' | 'navRight';
 
 export class Input {
   enabled = true;
-  lastDevice: 'keyboard' | 'gamepad' = 'keyboard';
+  lastDevice: 'keyboard' | 'gamepad' | 'touch' = 'keyboard';
+  /** Latest on-screen controls state (see input/touch.ts). */
+  private touch = { x: 0, y: 0, fire: false, handbrake: false, brake: false };
   private held = new Set<string>();
   private edges = new Set<Action>();
   private prevPad: boolean[] = [];
@@ -75,6 +79,18 @@ export class Input {
       this.held.add(e.code);
       if (e.code in EDGE && !e.repeat) this.edges.add(EDGE[e.code]);
     } else this.held.delete(e.code);
+  }
+
+  /** On-screen stick (-1..1 each axis, screen space) and held buttons. */
+  setTouch(t: { x: number; y: number; fire: boolean; handbrake: boolean; brake: boolean }): void {
+    this.touch = t;
+    this.lastDevice = 'touch';
+  }
+
+  /** An on-screen button press. */
+  tap(a: Action): void {
+    this.lastDevice = 'touch';
+    if (this.enabled) this.edges.add(a);
   }
 
   releaseAll(): void {
@@ -123,8 +139,19 @@ export class Input {
     } else { this.prevPad = []; this.navDir = null; }
     this.latchPad = false;
 
+    let absolute = false;
+    const t = this.touch, tm = Math.hypot(t.x, t.y);
+    if (this.enabled) {
+      if (tm >= DEADZONE && tm > Math.hypot(moveX, moveY)) {
+        const k = Math.min(1, (tm - DEADZONE) / (1 - DEADZONE)) / tm;
+        moveX = t.x * k; moveY = t.y * k; absolute = true;
+      }
+      fire ||= t.fire; hb ||= t.handbrake;
+      if (t.brake) brake = 1;
+    }
+
     s.accel = accel; s.brake = brake; s.steer = Math.max(-1, Math.min(1, steer)); s.fire = fire; s.handbrake = hb;
-    s.moveX = moveX; s.moveY = moveY;
+    s.moveX = moveX; s.moveY = moveY; s.absolute = absolute;
     return s;
   }
 
