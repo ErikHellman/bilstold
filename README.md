@@ -13,7 +13,10 @@ npm install
 npm run dev      # http://localhost:5173
 npm run build    # static site in dist/ (~52 KB gzipped JS)
 npm test         # vitest: unit, simulation and a 20-minute soak test
+npm run test:e2e # Playwright: the real game in Chromium (desktop, phone, gamepad, production build)
 ```
+
+The browser tests in `e2e/` need Chromium once: `npx playwright install chromium`, or point `PW_CHROMIUM_PATH` at a Chromium you already have.
 
 The game has no runtime dependencies, and there are no image, audio or font files. All sprites, tiles, the bitmap font, the sound effects and the radio music are generated in code at startup.
 
