@@ -6,6 +6,8 @@ export function el<K extends keyof HTMLElementTagNameMap>(tag: K, attrs: Record<
   for (const [k, v] of Object.entries(attrs)) {
     if (k.startsWith('on') && typeof v === 'function') e.addEventListener(k.slice(2), v as EventListener);
     else if (k === 'class') e.className = String(v);
+    // aria-*, data-*: not DOM properties, so they must be set as attributes.
+    else if (k.includes('-')) e.setAttribute(k, String(v));
     else if (v !== undefined && v !== null && v !== false) (e as unknown as Record<string, unknown>)[k] = v;
   }
   for (const c of children) if (c) e.append(c);
