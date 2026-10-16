@@ -16,6 +16,10 @@ import { DIFFICULTIES } from './game/difficulty';
 import { CheatCode } from './input/cheatcode';
 import { giveWeapon, givePowerup, loseTheCops, refillAmmo, setGodMode, spawnCarNear } from './game/cheats';
 import { showCheats } from './ui/cheats';
+import { showBriefing } from './ui/briefing';
+import { makePortrait } from './render/sprites/portraits';
+import { bossFor } from './game/story/characters';
+import type { GameEvents } from './core/events';
 
 const SETTINGS_KEY = 'bilstold.settings';
 const AUTOSAVE_S = 10;
@@ -117,6 +121,7 @@ function startSession(s: Session) {
   for (const u of unsub) u();
   unsub = [
     s.world.bus.on('missionEnd', () => save()),
+    s.world.bus.on('missionStart', e => { if (e.brief) brief(s, e.title, e.brief); }),
     s.world.bus.on('cityComplete', e => {
       save();
       screen = 'cityComplete';
@@ -164,6 +169,18 @@ function openCheats() {
   });
 }
 
+/** Pauses for the boss's phone call before a storyline job. */
+function brief(s: Session, title: string, b: NonNullable<GameEvents['missionStart']['brief']>) {
+  const c = s.world.city, gang = c.gangs[b.gang];
+  screen = 'briefing';
+  input.releaseAll();
+  showBriefing({
+    speaker: b.speaker, lines: b.lines, title, color: gang?.color ?? '#f1c40f',
+    portrait: makePortrait(gang ? bossFor(gang.name).look : null, gang?.color ?? '#f1c40f', b.gang + c.index),
+    onDone: resume,
+  });
+}
+
 function resume() {
   hide();
   input.releaseAll();
@@ -207,6 +224,9 @@ function step(dt: number) {
     case 'registry':
       if (inp.pressed.has('registry') || inp.pressed.has('pause') || inp.pressed.has('back')) { screen = 'playing'; renderer.showRegistry = false; audio.setActive(true); }
       break;
+    case 'briefing':
+      menu(inp, resume);
+      break;
     case 'paused':
     case 'cheats':
       if (inp.pressed.has('pause')) { resume(); break; }
@@ -229,7 +249,7 @@ function syncRadio() {
   radio.update();
 }
 /** Menus and the map barely change: draw them at a trickle. */
-const fpsCap = () => (screen === 'paused' || screen === 'cheats' || screen === 'cityComplete' ? 10 : settings.batterySaver || screen === 'title' || screen === 'map' || screen === 'registry' ? 30 : 60);
+const fpsCap = () => (screen === 'paused' || screen === 'cheats' || screen === 'cityComplete' || screen === 'briefing' ? 10 : settings.batterySaver || screen === 'title' || screen === 'map' || screen === 'registry' ? 30 : 60);
 const frame = (a: number) => { renderer.render(a); if (screen === 'playing') sfx.tick(); syncRadio(); };
 let raf = startRaf(loop, frame, fpsCap);
 

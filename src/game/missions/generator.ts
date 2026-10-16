@@ -26,7 +26,7 @@ function curbTiles(c: City): number[] {
   return list;
 }
 
-function pickTile(r: Rng, c: City, from: { x: number; y: number }, minD: number, maxD: number, gang = -1): { tx: number; ty: number } {
+export function pickTile(r: Rng, c: City, from: { x: number; y: number }, minD: number, maxD: number, gang = -1): { tx: number; ty: number } {
   const list = curbTiles(c);
   for (let tries = 0; tries < 400; tries++) {
     const i = list[Math.floor(r() * list.length)];
@@ -44,21 +44,36 @@ const STEAL_MODELS: VehicleModelId[] = ['sedan', 'compact', 'van', 'pickup', 'ta
 const COMMON_MODELS: VehicleModelId[] = ['sedan', 'compact', 'taxi', 'van', 'pickup'];
 const RAMPAGE_WEAPONS: WeaponId[] = ['pistol', 'smg', 'shotgun', 'flamer', 'electro', 'rocket'];
 
+export interface MissionBuild { params: MissionParams; title: string; timeLimit: number }
+/** Choices a caller can force on a job; anything left out is rolled. */
+export interface BuildOptions { model?: VehicleModelId; enemy?: number; gangPhone?: boolean }
+
 export function generateMission(city: City, phone: Landmark, n: number, ps: PlayerState): MissionSpec {
   const r = makeRng(derive(city.seed, 'mission', city.index, phone.id, n));
   const d = missionDifficulty(city.index, ps.cityMissions);
   const gangPhone = phone.gang >= 0;
-  const enemy = gangPhone ? RIVAL(phone.gang) : Math.floor(r() * 3);
-  const here = { x: phone.tx * TILE, y: phone.ty * TILE };
   const pool: MissionKind[] = gangPhone
-    ? ['assassinate', 'assassinate', 'carBomb', 'destroyVehicles', 'deliverCar', 'rampage', 'checkpoint']
-    : ['deliverCar', 'deliverCar', 'checkpoint', 'taxi', 'crush', 'destroyVehicles', 'assassinate', 'rampage', 'taxi'];
+    ? ['assassinate', 'assassinate', 'carBomb', 'destroyVehicles', 'deliverCar', 'rampage', 'checkpoint', 'chase', 'defend']
+    : ['deliverCar', 'deliverCar', 'checkpoint', 'taxi', 'crush', 'destroyVehicles', 'assassinate', 'rampage', 'taxi', 'heat', 'escort'];
   const kind = pick(r, pool);
+  const b = buildMission(kind, r, city, phone, d, { gangPhone, enemy: gangPhone ? RIVAL(phone.gang) : Math.floor(r() * 3) });
+  return { id: `${phone.id}-${n}`, kind, title: b.title, giver: phone.gang, reward: missionReward(kind, d), respect: 10 + 2 * d, timeLimit: b.timeLimit, params: b.params };
+}
+
+export const missionReward = (kind: MissionKind, d: number) =>
+  Math.round(((TUNING.missionBase + TUNING.missionPerDifficulty * d) * REWARD_FACTOR[kind]) / 100) * 100;
+
+/** Rolls the details of one job of the given kind, started from a phone at difficulty d. */
+export function buildMission(kind: MissionKind, r: Rng, city: City, phone: Landmark, d: number, o: BuildOptions = {}): MissionBuild {
+  const here = { x: phone.tx * TILE, y: phone.ty * TILE };
+  const enemy = o.enemy ?? Math.floor(r() * 3);
+  const gangPhone = o.gangPhone ?? phone.gang >= 0;
   const enemyName = city.gangs[enemy]?.name ?? 'the gang';
+  const enemyCar = city.gangs[enemy]?.carModel ?? 'sedan';
   let params: MissionParams, title: string, timeLimit = 0;
   switch (kind) {
     case 'deliverCar': {
-      const model = STEAL_MODELS[Math.min(STEAL_MODELS.length - 1, randInt(r, 0, 2 + d))];
+      const model = o.model ?? STEAL_MODELS[Math.min(STEAL_MODELS.length - 1, randInt(r, 0, 2 + d))];
       const garages = city.landmarks.filter(l => l.kind === 'garage');
       const garage = garages.length ? pick(r, garages).id : -1;
       const s = pickTile(r, city, here, 300, 1100);
@@ -76,7 +91,7 @@ export function generateMission(city: City, phone: Landmark, n: number, ps: Play
     }
     case 'carBomb': {
       const t = pickTile(r, city, here, 500, 2200, enemy);
-      params = { kind, ...t, model: city.gangs[enemy]?.carModel ?? 'sedan', gang: enemy };
+      params = { kind, ...t, model: o.model ?? enemyCar, gang: enemy };
       title = `Blow up the ${enemyName} car`;
       timeLimit = 240;
       break;
@@ -96,7 +111,7 @@ export function generateMission(city: City, phone: Landmark, n: number, ps: Play
       break;
     }
     case 'destroyVehicles': {
-      const model = gangPhone ? city.gangs[enemy]?.carModel ?? 'sedan' : pick(r, COMMON_MODELS);
+      const model = o.model ?? (gangPhone ? enemyCar : pick(r, COMMON_MODELS));
       const count = 2 + d;
       params = { kind, model, count };
       title = `Destroy ${count} vehicles of type ${VEHICLES[model].name}`;
@@ -110,8 +125,37 @@ export function generateMission(city: City, phone: Landmark, n: number, ps: Play
       timeLimit = Math.round(Math.hypot(t.tx * TILE - here.x, t.ty * TILE - here.y) / 200 + 25);
       break;
     }
+    case 'escort': {
+      const t = pickTile(r, city, here, 900, 2000);
+      params = { kind, fromPhone: phone.id, ...t, attackers: Math.min(4, 1 + Math.ceil(d / 2)), gang: enemy };
+      title = `Get the passenger across town. ${enemyName} are hunting them`;
+      timeLimit = Math.round(Math.hypot(t.tx * TILE - here.x, t.ty * TILE - here.y) / 180 + 45);
+      break;
+    }
+    case 'chase': {
+      const t = pickTile(r, city, here, 350, 700);
+      params = { kind, ...t, model: o.model ?? enemyCar, gang: enemy };
+      title = `Stop the ${VEHICLES[o.model ?? enemyCar].name} before it gets away`;
+      timeLimit = 120;
+      break;
+    }
+    case 'heat': {
+      const level = Math.min(4, 1 + Math.ceil(d / 2));
+      params = { kind, level };
+      title = `Get ${level} wanted stars, then lose the cops`;
+      timeLimit = 150 + 30 * level;
+      break;
+    }
+    case 'defend': {
+      const t = pickTile(r, city, here, 300, 900);
+      const duration = 50 + 10 * Math.min(4, d);
+      params = { kind, ...t, gang: enemy, waves: 2 + Math.min(3, Math.floor(d / 2)), perWave: Math.min(5, 1 + d), duration };
+      title = `Hold the spot against ${enemyName} for ${duration} seconds`;
+      timeLimit = 0;
+      break;
+    }
     case 'crush': {
-      const model = pick(r, COMMON_MODELS);
+      const model = o.model ?? pick(r, COMMON_MODELS);
       params = { kind, model };
       title = `Take a ${VEHICLES[model].name} to the crusher`;
       timeLimit = 240;
@@ -126,6 +170,5 @@ export function generateMission(city: City, phone: Landmark, n: number, ps: Play
       timeLimit = 0;
     }
   }
-  const reward = Math.round(((TUNING.missionBase + TUNING.missionPerDifficulty * d) * REWARD_FACTOR[kind]) / 100) * 100;
-  return { id: `${phone.id}-${n}`, kind, title, giver: phone.gang, reward, respect: 10 + 2 * d, timeLimit, params };
+  return { params, title, timeLimit };
 }

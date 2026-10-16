@@ -1,3 +1,4 @@
+import { isStoryPhone } from '../game/story/story';
 import type { World } from '../sim/world';
 import type { Ped } from '../sim/types';
 import type { Camera } from './camera';
@@ -146,7 +147,8 @@ export function drawPhones(ctx: Ctx, cam: Camera, w: World) {
     ctx.fillStyle = '#ddd'; ctx.fillRect(tmp.x - 2 * z, tmp.y - 2 * z, 4 * z, 3 * z);
     if (w.ringing.has(l.id) && !w.mission) {
       const r = (6 + ((w.time * 20) % 10)) * z;
-      ctx.strokeStyle = `rgba(255,230,80,${Math.floor(w.time * 4) % 2 ? 0.9 : 0.4})`;
+      const a = Math.floor(w.time * 4) % 2 ? 0.9 : 0.4;
+      ctx.strokeStyle = isStoryPhone(w.city, l.id) ? `rgba(255,82,82,${a})` : `rgba(255,230,80,${a})`;
       ctx.lineWidth = 2;
       ctx.beginPath(); ctx.arc(tmp.x, tmp.y, r, 0, Math.PI * 2); ctx.stroke();
     }

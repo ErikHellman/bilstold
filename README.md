@@ -57,7 +57,8 @@ There is also a hidden cheats menu for weapons, power-ups, god mode and spawning
   - Getting wasted costs you a life.
 - **Gangs:** three gangs with territories. Each tracks its respect for you, which changes as you kill their members or take jobs from them.
 - **Street life:** criminals mug people and steal cars. Ambulances revive the dead, and fire trucks put out fires.
-- **Missions:** jobs from ringing payphones. They include delivering cars, assassinations, car bombs, checkpoint races, destroying vehicles, taxi rides, the crusher and rampages.
+- **Storylines:** each gang's boss calls from a red-ringing phone (marked S on the map) with a five-job storyline, opened by a short briefing. Finish two storylines and a phone downtown (F) opens the city finale, which pays a quarter of the city goal.
+- **Missions:** jobs from ringing payphones. They include delivering cars, assassinations, car bombs, checkpoint races, destroying vehicles, taxi rides, the crusher, rampages, escorting someone past gang hit squads, chasing down a fleeing car, getting wanted stars and losing them, and holding a spot against waves of attackers.
 - **Radio:** four procedural stations play while you drive: *Radio Bilstöld*, *Hårdrock FM*, *Dansbandet* and *Lugna Favoriter*.
 
 ## Health, aiming and difficulty

@@ -4,7 +4,8 @@ import type { Ped, Vehicle } from '../../sim/types';
 import type { World } from '../../sim/world';
 import { speedOf } from '../../sim/vehicle';
 import { armNpc } from '../../sim/combat';
-import { findWalkableNear, landmarkCenter, nearestLandmark } from '../../world/query';
+import { findWalkableNear, landmarkCenter, nearestLandmark, tileAtWorld } from '../../world/query';
+import { T } from '../../world/tiles';
 import { VEHICLES } from '../data/vehicles';
 import { startFrenzy } from '../frenzy';
 import type { MissionSave, MissionSpec } from './templates';
@@ -24,6 +25,8 @@ export class MissionRunner {
   private unsub: (() => void)[] = [];
   private primary: Ped | Vehicle | null = null;
   private origin = { x: 0, y: 0 };
+  /** Seconds spent away from a defend spot. */
+  private away = 0;
 
   constructor(private w: World, readonly spec: MissionSpec, restore?: Omit<MissionSave, 'spec'>) {
     this.timer = spec.timeLimit;
@@ -132,6 +135,63 @@ export class MissionRunner {
         break;
       case 'checkpoint':
         break;
+      case 'escort': {
+        const phone = w.city.landmarks.find(l => l.id === p.fromPhone);
+        const c = phone ? landmarkCenter(phone) : { x: w.player.x, y: w.player.y };
+        if (this.stage === 0) {
+          const q = this.keep(w.spawnPed('passenger', c.x + 10, c.y, 0));
+          if (q) q.ai.mode = 'idle';
+          this.primary = q;
+        }
+        on('pedKilled', (e: { ped: Ped }) => { if (e.ped === this.primary) this.fail('Your passenger died'); });
+        on('vehicleDestroyed', (e: { vehicle: Vehicle }) => {
+          if (this.stage >= 1 && e.vehicle === w.player.vehicle) this.fail('Your passenger died');
+        });
+        break;
+      }
+      case 'chase': {
+        const c = findWalkableNear(w.city, p.tx * TILE + TILE / 2, p.ty * TILE + TILE / 2);
+        const v = this.keep(w.spawnVehicle(p.model, c.x, c.y, 0, 0, false));
+        const d = this.keep(w.spawnPed('target', c.x, c.y, 0));
+        if (v && d) { d.vehicle = v; v.driver = d; Object.assign(v.ai, { mode: 'flee', tx: w.player.x, ty: w.player.y }); }
+        this.primary = v;
+        on('vehicleDestroyed', (e: { vehicle: Vehicle }) => { if (e.vehicle === this.primary) this.succeed(); });
+        on('pedKilled', (e: { ped: Ped }) => { if (e.ped === d) this.succeed(); });
+        break;
+      }
+      case 'defend':
+        this.origin = center(p.tx, p.ty);
+        break;
+      case 'heat':
+        break;
+    }
+  }
+
+  /** A gang member with a gun, out for the player. gang -1 picks a random gang. */
+  private spawnAttacker(gang: number, x: number, y: number): Ped | null {
+    const w = this.w, g = gang >= 0 ? gang : Math.floor(w.rng() * 3);
+    const at = findWalkableNear(w.city, x, y);
+    const q = this.keep(w.spawnPed('gang', at.x, at.y, 0));
+    if (!q) return null;
+    q.gang = g; q.skin = 12 + g;
+    armNpc(w, q, w.rng() < 0.6 ? 'pistol' : 'smg');
+    Object.assign(q.ai, { mode: 'attack', target: w.player, timer: 120 });
+    return q;
+  }
+
+  /** A gang car with a crew that rams the player, spawned on a road about r away. */
+  private spawnHitCar(gang: number, r: number): void {
+    const w = this.w, pl = w.player.vehicle ?? w.player;
+    for (let tries = 0; tries < 16; tries++) {
+      const a = w.rng() * Math.PI * 2, x = pl.x + Math.cos(a) * r, y = pl.y + Math.sin(a) * r;
+      if (tileAtWorld(w.city, x, y) !== T.Road) continue;
+      const v = this.keep(w.spawnVehicle(w.city.gangs[gang]?.carModel ?? 'sedan', x, y, a + Math.PI, 0, false));
+      if (!v) return;
+      const d = this.keep(w.spawnPed('gang', x, y, 0));
+      if (!d) return;
+      d.gang = gang; d.skin = 12 + gang; d.vehicle = v; v.driver = d;
+      Object.assign(v.ai, { mode: 'hunt', stuck: 0 });
+      return;
     }
   }
 
@@ -215,6 +275,72 @@ export class MissionRunner {
       case 'rampage':
         this.target = null;
         break;
+      case 'escort': {
+        const q = this.primary as Ped | null;
+        if (this.stage === 0) {
+          if (!q || !q.active || q.dead) { this.fail('Your passenger died'); break; }
+          this.target = { x: q.x, y: q.y };
+          if (pl.vehicle && Math.hypot(pl.vehicle.x - q.x, pl.vehicle.y - q.y) < 40) {
+            this.stage = 1;
+            w.removePed(q);
+            this.primary = null;
+            w.bus.emit('message', { text: 'Passenger on board. Watch your back!', seconds: 3 });
+            for (let i = 0; i < p.attackers; i++) this.spawnHitCar(p.gang, 320 + 60 * i);
+          }
+        } else {
+          const c = center(p.tx, p.ty);
+          this.target = c;
+          const v = pl.vehicle;
+          const left = Math.hypot(pl.x - c.x, pl.y - c.y);
+          if (this.stage === 1 && left < this.progress / 2) {
+            this.stage = 2;
+            for (let i = 0; i < Math.ceil(p.attackers / 2); i++) this.spawnHitCar(p.gang, 360);
+          }
+          if (this.progress === 0) this.progress = Math.max(1, left);
+          if (v && Math.hypot(v.x - c.x, v.y - c.y) < 48 && speedOf(v) < 30) this.succeed();
+        }
+        break;
+      }
+      case 'chase': {
+        const v = this.primary as Vehicle | null;
+        if (!v || !v.active) { this.fail('The car got away'); break; }
+        this.target = { x: v.x, y: v.y };
+        if (v.driver && v.ai.mode !== 'flee') v.ai.mode = 'flee';
+        if (Math.hypot(v.x - pl.x, v.y - pl.y) > 1100) this.fail('The car got away');
+        break;
+      }
+      case 'heat': {
+        const lvl = w.ps.wanted.level;
+        this.target = null;
+        if (this.stage === 0) {
+          this.counter = `Wanted ${lvl}/${p.level}`;
+          if (lvl >= p.level) { this.stage = 1; w.bus.emit('message', { text: 'Now lose them!', seconds: 3 }); }
+        } else {
+          this.counter = 'Lose the cops!';
+          if (lvl === 0) this.succeed();
+        }
+        break;
+      }
+      case 'defend': {
+        const o = this.origin;
+        this.target = o;
+        const near = !pl.dead && Math.hypot(pl.x - o.x, pl.y - o.y) < 170;
+        if (near) { this.progress += dt; this.away = 0; } else this.away += dt;
+        if (this.away > 10) { this.fail('You left the spot'); break; }
+        const every = p.duration / p.waves;
+        if (this.stage < p.waves && this.progress >= this.stage * every) {
+          for (let i = 0; i < p.perWave; i++) {
+            const a = w.rng() * Math.PI * 2;
+            this.spawnAttacker(p.gang, o.x + Math.cos(a) * 230, o.y + Math.sin(a) * 230);
+          }
+          if (this.stage > 0) w.bus.emit('message', { text: 'More of them coming!', seconds: 2 });
+          this.stage++;
+        }
+        const left = Math.max(0, Math.ceil(p.duration - this.progress));
+        this.counter = near ? `Hold on: ${left}s` : `Get back to the spot! ${Math.ceil(10 - this.away)}`;
+        if (this.progress >= p.duration) this.succeed();
+        break;
+      }
     }
     return this.status;
   }
