@@ -6,7 +6,7 @@ export const SEED = 'E2E-STADEN';
 export async function openGame(page: Page, query = `seed=${SEED}`): Promise<string[]> {
   const errors: string[] = [];
   page.on('pageerror', e => errors.push(e.message));
-  // The game ships no favicon; any other failed load or console error counts.
+  // Any failed load or console error counts (bar a stray favicon.ico request).
   page.on('console', m => { if (m.type() === 'error' && !m.location().url.endsWith('/favicon.ico')) errors.push(m.text()); });
   await page.goto(`/?${query}`);
   await expect(page.locator('.panel.title')).toBeVisible();
