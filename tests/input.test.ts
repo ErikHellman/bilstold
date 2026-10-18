@@ -1,4 +1,4 @@
-import { Input } from '../src/input/input';
+import { Input, PAD } from '../src/input/input';
 
 function key(t: EventTarget, type: string, code: string, extra: object = {}) {
   const e = new Event(type) as any;
@@ -47,7 +47,7 @@ test('gamepad axes, triggers, edges and disconnect', () => {
   const inp = new Input(new EventTarget(), () => pads);
   let s = inp.poll();
   expect(s.steer).toBeCloseTo(0.8); expect(s.accel).toBe(1); expect(inp.lastDevice).toBe('gamepad');
-  pads = [pad([0.1, 0], [0])];
+  pads = [pad([0.1, 0], [3])];
   s = inp.poll();
   expect(s.steer).toBe(0); expect(s.pressed.has('enter')).toBe(true);
   expect(inp.poll().pressed.has('enter')).toBe(false);
@@ -89,19 +89,52 @@ test('pad still drives menus while a text field has focus, but not the game', ()
   inp.poll();
   pads = [pad([0, 1], [0, 7, 4])];
   const s = inp.poll();
-  expect(s.pressed.has('navDown')).toBe(true); expect(s.pressed.has('enter')).toBe(true);
-  expect(s.pressed.has('weaponPrev')).toBe(false); expect(s.accel).toBe(0); expect(s.moveY).toBe(0);
+  expect(s.pressed.has('navDown')).toBe(true); expect(s.pressed.has('select')).toBe(true);
+  expect(s.pressed.has('weaponPrev')).toBe(false); expect(s.pressed.has('registry')).toBe(false); expect(s.accel).toBe(0); expect(s.moveY).toBe(0);
 });
 test('a pad button held across releaseAll does not fire again', () => {
   let pads: any[] = [pad([0, 0], [])];
   const inp = new Input(new EventTarget(), () => pads);
   inp.poll();
   pads = [pad([0, 0], [0, 13])];
-  expect(inp.poll().pressed.has('enter')).toBe(true);
+  expect(inp.poll().pressed.has('select')).toBe(true);
   inp.releaseAll();
-  const s = inp.poll();
-  expect(s.pressed.has('enter')).toBe(false); expect(s.pressed.has('navDown')).toBe(false);
+  let s = inp.poll();
+  expect(s.pressed.has('select')).toBe(false); expect(s.pressed.has('navDown')).toBe(false);
+  // A selected "Resume"; still holding it must not start firing.
+  expect(s.fire).toBe(false); expect(inp.poll().fire).toBe(false);
   pads = [pad([0, 0], [])]; inp.poll();
   pads = [pad([0, 0], [0])];
-  expect(inp.poll().pressed.has('enter')).toBe(true);
+  s = inp.poll();
+  expect(s.pressed.has('select')).toBe(true); expect(s.fire).toBe(true);
+});
+test('every gameplay screen and action has a pad button', () => {
+  const press = (b: number) => {
+    let pads: any[] = [pad([0, 0], [])];
+    const inp = new Input(new EventTarget(), () => pads);
+    inp.poll();
+    pads = [pad([0, 0], [b])];
+    return inp.poll();
+  };
+  expect(press(PAD.Y).pressed.has('enter')).toBe(true);
+  expect(press(PAD.A).fire).toBe(true);
+  expect(press(PAD.X).handbrake).toBe(true);
+  expect(press(PAD.LB).pressed.has('weaponPrev')).toBe(true);
+  expect(press(PAD.RB).pressed.has('weaponNext')).toBe(true);
+  expect(press(PAD.LEFT).pressed.has('weaponPrev')).toBe(true);
+  expect(press(PAD.RIGHT).pressed.has('weaponNext')).toBe(true);
+  expect(press(PAD.UP).pressed.has('radio')).toBe(true);
+  expect(press(PAD.DOWN).pressed.has('registry')).toBe(true);
+  expect(press(PAD.VIEW).pressed.has('map')).toBe(true);
+  expect(press(PAD.MENU).pressed.has('pause')).toBe(true);
+  expect(press(PAD.B).pressed.has('back')).toBe(true);
+  const t = press(PAD.RT); expect(t.accel).toBe(1);
+  expect(press(PAD.LT).brake).toBe(1);
+});
+test('pad kind picks button names', () => {
+  const inp = new Input(new EventTarget(), () => [{ ...pad([0, 0], []), id: 'DualSense Wireless Controller (STANDARD GAMEPAD Vendor: 054c Product: 0ce6)' }]);
+  expect(inp.padKind).toBe('none');
+  inp.poll(); expect(inp.padKind).toBe('playstation');
+  const x = new Input(new EventTarget(), () => [{ ...pad([0, 0], []), id: 'Xbox Wireless Controller' }]);
+  x.poll(); expect(x.padKind).toBe('xbox');
 });

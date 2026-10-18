@@ -25,7 +25,7 @@ const setButton = (page: Page, button: number, on: boolean) => page.evaluate(([b
   btn.pressed = v; btn.value = v ? 1 : 0;
 }, [button, on] as const);
 
-const A = 0, B = 1, START = 9, DOWN = 13;
+const A = 0, B = 1, VIEW = 8, START = 9, DOWN = 13;
 
 test('menus, play and pause work from a gamepad', async ({ page }) => {
   await openGame(page);
@@ -49,4 +49,27 @@ test('menus, play and pause work from a gamepad', async ({ page }) => {
   await expect(page.getByRole('button', { name: 'Resume' })).not.toBeFocused();
   await press(page, B);
   await expectScreen(page, 'playing');
+});
+
+test('every screen opens from the pad, and the help shows pad buttons', async ({ page }) => {
+  await openGame(page);
+  await press(page, A);
+  await expectScreen(page, 'playing');
+
+  await press(page, DOWN);
+  await expectScreen(page, 'registry');
+  await press(page, B);
+  await expectScreen(page, 'playing');
+  await press(page, VIEW);
+  await expectScreen(page, 'map');
+  await press(page, VIEW);
+  await expectScreen(page, 'playing');
+
+  await press(page, START);
+  await expectScreen(page, 'paused');
+  await page.getByText('Controls', { exact: true }).click();
+  const help = page.locator('table.controls.help');
+  await expect(help).toContainText('Vehicle registry');
+  await expect(help.locator('.btn.y')).toHaveText('Y');
+  await expect(help).not.toContainText('Esc / P');
 });

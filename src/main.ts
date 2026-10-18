@@ -6,7 +6,7 @@ import { createSession, nextCity, resolveSeed, type Session } from './game/sessi
 import { Input, type InputState } from './input/input';
 import { Renderer } from './render/renderer';
 import { DEFAULT_SETTINGS, readSave, restoreSession, safeStorage, writeSave, type SaveV1, type Settings } from './save/save';
-import { hide } from './ui/overlay';
+import { hide, syncControlsHelp } from './ui/overlay';
 import { menuInput, syncGamepadClass } from './ui/padnav';
 import { showCityComplete, showPause } from './ui/pause';
 import { cityGoal } from './game/progression';
@@ -220,6 +220,7 @@ const menu = (inp: InputState, onBack?: () => void) => menuInput(inp, input.last
 function step(dt: number) {
   const inp = input.poll();
   syncGamepadClass(input.lastDevice === 'gamepad');
+  syncControlsHelp(input.padKind);
   touch?.setMode(screen === 'playing' ? 'playing' : screen === 'map' || screen === 'registry' ? 'overlay' : 'hidden');
   switch (screen) {
     case 'title':

@@ -24,19 +24,20 @@ The game has no runtime dependencies, and there are no image, audio or font file
 
 | Keyboard | Gamepad | Action |
 |---|---|---|
-| — | Left stick | Walk in the stick's direction (on foot) |
+| — | Left stick | Walk in the stick's direction / steer |
 | W / ↑ | RT | Accelerate / walk |
 | S / ↓ | LT | Brake / reverse |
 | A D / ← → | Left stick | Steer / turn |
-| Space | B | Handbrake |
-| Ctrl / J | X or RB | Fire |
-| Enter / F | A | Enter or exit a car (carjacks the driver) |
-| Q / E | LB / Y | Change weapon |
-| R | — | Change radio station (in a car) |
-| M | Back | City map |
-| Esc / P | Start | Pause and settings |
+| Space | X | Handbrake |
+| Ctrl / J | A | Fire |
+| Enter / F | Y | Enter or exit a car (carjacks the driver) |
+| Q / E | LB / RB or D-pad ← → | Change weapon |
+| R | D-pad ↑ | Change radio station (in a car) |
+| M | View | City map |
+| C | D-pad ↓ | Vehicle registry |
+| Esc / P | Menu | Pause and settings |
 
-Gamepad buttons are named Xbox-style; on a PlayStation pad A = Cross, B = Circle, X = Square, Y = Triangle, Back = Create, Start = Options. In menus, move with the D-pad or left stick, select with A and go back with B.
+Gamepad buttons are named Xbox-style; on a PlayStation pad A = Cross, B = Circle, X = Square, Y = Triangle, LB/RB = L1/R1, LT/RT = L2/R2, View = Create, Menu = Options. In menus, move with the D-pad or left stick, select with A and go back with B (B also closes the map and registry). While a pad is connected, the in-game Controls help lists the pad's buttons instead of the keyboard, with PlayStation names on a PlayStation pad.
 
 On phones and tablets (landscape) the game shows touch controls: put a thumb anywhere on the left half for a floating stick, which walks you where it points and, in a car, drives towards where it points (point behind the car to reverse). The right side has Fire, Enter, Drift (handbrake), Brake and Gun (next weapon); Pause, Map and Radio sit along the top. Tap anywhere to close the map. Touch devices start with the battery saver on. Add `?touch=1` to the URL to try the touch controls on a desktop.
 
