@@ -6,6 +6,10 @@ You steal cars, pick up weapons and power-ups, answer ringing payphones for jobs
 
 **Play it:** https://erikhellman.github.io/bilstold/
 
+![A police chase in Hamnstaden](promo/04-police-chase.png)
+
+More screenshots, a 44-second gameplay video ([gameplay.mp4](promo/gameplay.mp4)) and a 512 px icon are in [promo/](promo/).
+
 ## Running it
 
 ```bash
