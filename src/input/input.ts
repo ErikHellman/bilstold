@@ -1,6 +1,6 @@
 import { DT } from '../core/const';
 
-export type Action = 'enter' | 'weaponNext' | 'weaponPrev' | 'radio' | 'map' | 'registry' | 'pause' | 'fire' | 'handbrake'
+export type Action = 'enter' | 'select' | 'weaponNext' | 'weaponPrev' | 'radio' | 'map' | 'registry' | 'pause' | 'fire' | 'handbrake'
   | 'back' | 'navUp' | 'navDown' | 'navLeft' | 'navRight';
 
 export interface InputState {
@@ -29,10 +29,18 @@ const EDGE: Record<string, Action> = {
   KeyR: 'radio', KeyM: 'map', KeyC: 'registry', Escape: 'pause', KeyP: 'pause',
 };
 // W3C "standard" mapping: 0 A/Cross, 1 B/Circle, 2 X/Square, 3 Y/Triangle, 4 LB/L1, 5 RB/R1,
-// 6 LT/L2, 7 RT/R2, 8 Back/Create, 9 Start/Options, 12-15 D-pad up/down/left/right.
-const PAD_EDGE: [number, Action][] = [[0, 'enter'], [1, 'back'], [4, 'weaponPrev'], [3, 'weaponNext'], [9, 'pause'], [8, 'map']];
+// 6 LT/L2, 7 RT/R2, 8 View/Create, 9 Menu/Options, 12-15 D-pad up/down/left/right.
+// In play (GTA-style): RT gas, LT brake, A fire, X handbrake, Y enter/exit, LB/RB or D-pad left/right weapon,
+// D-pad up radio, D-pad down vehicle registry, View map, Menu pause. In menus: A select, B back.
+// The labels in ui/overlay.ts (PAD_HELP) must match.
+export const PAD = { A: 0, B: 1, X: 2, Y: 3, LB: 4, RB: 5, LT: 6, RT: 7, VIEW: 8, MENU: 9, UP: 12, DOWN: 13, LEFT: 14, RIGHT: 15 } as const;
+const PAD_EDGE: [number, Action][] = [
+  [PAD.A, 'select'], [PAD.B, 'back'], [PAD.Y, 'enter'], [PAD.LB, 'weaponPrev'], [PAD.RB, 'weaponNext'],
+  [PAD.LEFT, 'weaponPrev'], [PAD.RIGHT, 'weaponNext'], [PAD.UP, 'radio'], [PAD.DOWN, 'registry'],
+  [PAD.VIEW, 'map'], [PAD.MENU, 'pause'],
+];
 /** Pad actions that still fire while a text field has focus, so menus stay navigable. */
-const MENU_ACTIONS = new Set<Action>(['enter', 'back']);
+const MENU_ACTIONS = new Set<Action>(['select', 'back']);
 const DPAD: [number, Action][] = [[12, 'navUp'], [13, 'navDown'], [14, 'navLeft'], [15, 'navRight']];
 const DEADZONE = 0.2;
 /** Stick deflection that counts as a menu direction. */
@@ -44,10 +52,14 @@ const CONTROLS = new Set(['BUTTON', 'SUMMARY', 'SELECT', 'A']);
 
 type PadLike = { connected: boolean; mapping?: string; axes: readonly number[]; buttons: readonly { pressed: boolean; value: number }[] };
 type NavAction = 'navUp' | 'navDown' | 'navLeft' | 'navRight';
+/** Which button names to show: PlayStation pads get Cross/Circle/Square/Triangle, everything else Xbox names. */
+export type PadKind = 'none' | 'xbox' | 'playstation';
 
 export class Input {
   enabled = true;
   lastDevice: 'keyboard' | 'gamepad' | 'touch' = 'keyboard';
+  /** The pad read on the last poll, if any. */
+  padKind: PadKind = 'none';
   /** Latest on-screen controls state (see input/touch.ts). */
   private touch = { x: 0, y: 0, fire: false, handbrake: false, brake: false };
   private held = new Set<string>();
@@ -55,8 +67,9 @@ export class Input {
   private prevPad: boolean[] = [];
   private navDir: NavAction | null = null;
   private navTicks = 0;
-  /** Set by releaseAll: the next poll records what is held on the pad without firing it again. */
+  /** Set by releaseAll: buttons held on the next poll are ignored until released, so they don't act again. */
   private latchPad = false;
+  private suppressed = new Set<number>();
   private state: InputState = { accel: 0, brake: 0, steer: 0, fire: false, handbrake: false, moveX: 0, moveY: 0, pressed: new Set() };
 
   constructor(target: EventTarget, private getPads: () => (PadLike | Gamepad | null)[] = defaultPads) {
@@ -117,8 +130,11 @@ export class Input {
     // The pad is read even while a text field has focus: it can't type, and it must be able to leave the field.
     const pad = firstPad(this.getPads());
     if (pad) {
-      const b = (i: number) => pad.buttons[i]?.pressed ?? false;
-      const v = (i: number) => pad.buttons[i]?.value ?? 0;
+      this.padKind = padKind(pad);
+      if (this.latchPad) pad.buttons.forEach((x, i) => { if (x.pressed) this.suppressed.add(i); });
+      for (const i of this.suppressed) if (!pad.buttons[i]?.pressed) this.suppressed.delete(i);
+      const b = (i: number) => (pad.buttons[i]?.pressed ?? false) && !this.suppressed.has(i);
+      const v = (i: number) => this.suppressed.has(i) ? 0 : pad.buttons[i]?.value ?? 0;
       const ax = pad.axes[0] ?? 0, ay = pad.axes[1] ?? 0;
       const mag = Math.hypot(ax, ay);
       const any = mag >= DEADZONE || pad.buttons.some(x => x.pressed);
@@ -127,16 +143,16 @@ export class Input {
         const padSteer = Math.abs(ax) < DEADZONE ? 0 : ax;
         if (mag >= DEADZONE) { const k = Math.min(1, (mag - DEADZONE) / (1 - DEADZONE)) / mag; moveX = ax * k; moveY = ay * k; }
         if (Math.abs(padSteer) > Math.abs(steer)) steer = padSteer;
-        accel = Math.max(accel, v(7));
-        brake = Math.max(brake, v(6));
-        fire ||= b(2) || b(5);
-        hb ||= b(1);
+        accel = Math.max(accel, v(PAD.RT));
+        brake = Math.max(brake, v(PAD.LT));
+        fire ||= b(PAD.A);
+        hb ||= b(PAD.X);
       }
       const edges = this.latchPad ? new Set<Action>() : s.pressed;
       for (const [i, a] of PAD_EDGE) if (b(i) && !this.prevPad[i] && (this.enabled || MENU_ACTIONS.has(a))) edges.add(a);
       this.navigate(pad, ax, ay, edges);
       this.prevPad = pad.buttons.map(x => x.pressed);
-    } else { this.prevPad = []; this.navDir = null; }
+    } else { this.prevPad = []; this.navDir = null; this.suppressed.clear(); this.padKind = 'none'; }
     this.latchPad = false;
 
     let absolute = false;
@@ -179,6 +195,12 @@ function firstPad(pads: (PadLike | Gamepad | null)[]): PadLike | null {
     if (!fallback || p.buttons.length > fallback.buttons.length) fallback = p;
   }
   return fallback;
+}
+
+function padKind(p: PadLike | Gamepad): PadKind {
+  const id = 'id' in p ? p.id : '';
+  // 054c is Sony's USB vendor id.
+  return /054c|playstation|dualsense|dualshock/i.test(id) ? 'playstation' : 'xbox';
 }
 
 function defaultPads(): (Gamepad | null)[] {

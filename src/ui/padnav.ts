@@ -71,13 +71,13 @@ function move(dir: Dir) {
 }
 
 /**
- * Gamepad control of the DOM menus: D-pad / left stick moves focus, A (Cross) activates, B (Circle) goes back.
+ * Gamepad control of the DOM menus: D-pad / left stick moves focus, A (Cross) selects, B (Circle) goes back.
  * Keyboard users already get this natively from Tab / Enter / Space.
  */
 export function menuInput(inp: InputState, fromGamepad: boolean, onBack?: () => void): void {
   if (inp.pressed.has('back') && onBack) { onBack(); return; }
   for (const [a, d] of NAV) if (inp.pressed.has(a)) move(d);
-  if (!inp.pressed.has('enter') || !fromGamepad) return;
+  if (!inp.pressed.has('select') || !fromGamepad) return;
   const el = document.activeElement;
   const activatable = el instanceof HTMLButtonElement || (el instanceof HTMLElement && el.tagName === 'SUMMARY')
     || (el instanceof HTMLInputElement && el.type === 'checkbox');
