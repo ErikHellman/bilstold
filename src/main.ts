@@ -25,6 +25,9 @@ import { STORY_STEPS } from './game/story/story';
 import { PACKAGES_PER_CITY } from './game/activities/packages';
 import type { World } from './sim/world';
 import type { GameEvents } from './core/events';
+import { initSentry } from './telemetry/sentry';
+
+void initSentry();
 
 const SETTINGS_KEY = 'bilstold.settings';
 const AUTOSAVE_S = 10;

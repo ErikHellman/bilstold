@@ -106,6 +106,10 @@ After the third city the cycle starts again, with one more level of police each 
 
 In dev builds, F3 shows a performance overlay. On a laptop the simulation takes about 0.1 ms per tick and rendering about 1–2 ms per frame.
 
+## Crash reporting
+
+Production builds report uncaught errors to Sentry when the `SENTRY_DSN` repository variable is set (Settings → Secrets and variables → Actions → Variables). The SDK is loaded as a separate ~30 KB chunk after the game starts, and only when a DSN is present; local and fork builds without it ship no Sentry code at all.
+
 ## Known limits
 
 - Touch play needs landscape; in portrait the game asks you to turn the device.
