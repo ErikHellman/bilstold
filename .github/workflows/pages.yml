@@ -26,6 +26,9 @@ jobs:
       - run: npm ci
       - run: npm test
       - run: npm run build
+        env:
+          VAKA_TOKEN: ${{ secrets.VAKA_TOKEN }}
+          VAKA_RELEASE: bilstold@${{ github.sha }}
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:

@@ -12,10 +12,14 @@
     "test:e2e": "playwright test"
   },
   "devDependencies": {
+    "@hellsoft/vaka-bundler-plugin": "^0.4.0",
     "@playwright/test": "^1.64.1",
     "@types/node": "^22.20.4",
     "typescript": "^5.6.0",
     "vite": "^6.0.0",
     "vitest": "^3.0.0"
+  },
+  "dependencies": {
+    "@hellsoft/vaka-browser": "^0.4.0"
   }
 }
