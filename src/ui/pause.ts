@@ -10,6 +10,8 @@ export interface PauseOptions {
   /** Progress through the current city, shown under the title. */
   progress?: { city: number; earned: number; goal: number; jobs: number };
   stats?: [string, string][];
+  /** Opens the feedback dialog; the menu item is hidden when absent. */
+  onFeedback?: () => void;
 }
 
 function slider(label: string, value: number, onchange: (v: number) => void) {
@@ -63,6 +65,7 @@ export function showPause(o: PauseOptions): void {
         ' Battery saver (30 fps)')),
     ...(o.stats ? [el('details', {}, el('summary', {}, 'Stats'), statsTable(o.stats))] : []),
     el('details', {}, el('summary', {}, 'Controls'), controlsTable()),
+    o.onFeedback ? el('button', { onclick: o.onFeedback }, 'Send feedback') : null,
     el('button', { onclick: o.onQuit }, 'Save & quit to title'),
   );
   show(panel);
