@@ -106,6 +106,10 @@ After the third city the cycle starts again, with one more level of police each 
 
 In dev builds, F3 shows a performance overlay. On a laptop the simulation takes about 0.1 ms per tick and rendering about 1–2 ms per frame.
 
+## Crash reporting and analytics
+
+Production builds report uncaught errors and cookieless pageviews to [Vaka](https://vaka.fly.dev) (project `bilst-ld`), plus a few gameplay events: `game_start`, `game_continue`, `mission_end`, `player_down` and `city_complete`. Nothing is sent from dev builds or from localhost. Source maps are uploaded during the Pages build when the `VAKA_TOKEN` repository secret is set, and are not deployed.
+
 ## Known limits
 
 - Touch play needs landscape; in portrait the game asks you to turn the device.

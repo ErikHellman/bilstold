@@ -25,6 +25,9 @@ import { STORY_STEPS } from './game/story/story';
 import { PACKAGES_PER_CITY } from './game/activities/packages';
 import type { World } from './sim/world';
 import type { GameEvents } from './core/events';
+import { initTelemetry, track } from './telemetry/vaka';
+
+initTelemetry();
 
 const SETTINGS_KEY = 'bilstold.settings';
 const AUTOSAVE_S = 10;
@@ -93,12 +96,13 @@ function openTitle(notice: string | null = null) {
   setAttract(saved ? saved.seed : seedField);
   showTitle({
     save: saved, notice, initialSeed: seedField,
-    onContinue: () => { if (saved) startSession(restoreSession(saved)); },
+    onContinue: () => { if (saved) { startSession(restoreSession(saved)); track('game_continue', { city: saved.cityIndex }); } },
     onNewGame: seed => {
       const s = resolveSeed(seed, randomSeed);
       seedField = s;
       startSession(createSession(s, 1));
       save();
+      track('game_start', { difficulty: settings.difficulty });
     },
     onSeedChange: seed => {
       seedField = seed;
@@ -130,10 +134,12 @@ function startSession(s: Session) {
   audio.setActive(true);
   for (const u of unsub) u();
   unsub = [
-    s.world.bus.on('missionEnd', () => save()),
+    s.world.bus.on('missionEnd', e => { save(); track('mission_end', { success: e.success, city: theme.name }); }),
+    s.world.bus.on('respawn', e => track('player_down', { kind: e.kind, city: theme.name })),
     s.world.bus.on('missionStart', e => { if (e.brief) brief(s, e.title, e.brief); }),
     s.world.bus.on('cityComplete', e => {
       save();
+      track('city_complete', { city: theme.name, index: e.index });
       screen = 'cityComplete';
       audio.setActive(false);
       showCityComplete(e.index, s.world.city.theme.name, themeFor(e.index + 1).name, statsOf(s.world), () => { const n = nextCity(s); startSession(n); save(); });
