@@ -25,7 +25,7 @@ import { STORY_STEPS } from './game/story/story';
 import { PACKAGES_PER_CITY } from './game/activities/packages';
 import type { World } from './sim/world';
 import type { GameEvents } from './core/events';
-import { initTelemetry, track } from './telemetry/vaka';
+import { feedbackAvailable, feedbackOpen, initTelemetry, openFeedback, track } from './telemetry/vaka';
 
 initTelemetry();
 
@@ -45,6 +45,9 @@ let attract: Session | null = null;
 let seedField = new URLSearchParams(location.search).get('seed') ?? randomSeed();
 let saveTimer = AUTOSAVE_S;
 let unsub: (() => void)[] = [];
+let textFocused = false;
+let feedbackShown = false;
+const feedback = feedbackAvailable() ? openFeedback : undefined;
 const audio = new AudioEngine(settings);
 const sfx = new Sfx(audio, () => ({ x: renderer.cam.x, y: renderer.cam.y }));
 const radio = new Radio(audio);
@@ -109,7 +112,8 @@ function openTitle(notice: string | null = null) {
       clearTimeout(seedDebounce);
       seedDebounce = window.setTimeout(() => { if (screen === 'title') setAttract(seed); }, 400);
     },
-    onFocusText: focused => { input.enabled = !focused; if (focused) input.releaseAll(); },
+    onFocusText: focused => { textFocused = focused; input.enabled = !focused; if (focused) input.releaseAll(); },
+    onFeedback: feedback,
   });
 }
 
@@ -155,6 +159,7 @@ function pause() {
   const w = session?.world;
   showPause({
     settings,
+    onFeedback: feedback,
     stats: w && statsOf(w),
     progress: w && { city: w.city.index, earned: w.ps.score - w.ps.cityStartScore, goal: cityGoal(w.city.index), jobs: w.ps.cityMissions },
     onResume: resume,
@@ -225,6 +230,14 @@ const menu = (inp: InputState, onBack?: () => void) => menuInput(inp, input.last
 
 function step(dt: number) {
   const inp = input.poll();
+  // Vaka's feedback dialog takes the keyboard (and freezes the game) while it is open.
+  const fb = feedbackOpen();
+  if (fb !== feedbackShown) {
+    feedbackShown = fb;
+    input.enabled = !fb && !textFocused;
+    input.releaseAll();
+  }
+  if (fb) return;
   syncGamepadClass(input.lastDevice === 'gamepad');
   syncControlsHelp(input.padKind);
   touch?.setMode(screen === 'playing' ? 'playing' : screen === 'map' || screen === 'registry' ? 'overlay' : 'hidden');

@@ -10,6 +10,8 @@ export interface TitleOptions {
   onNewGame: (seed: string) => void;
   onSeedChange: (seed: string) => void;
   onFocusText: (focused: boolean) => void;
+  /** Opens the feedback dialog; the menu item is hidden when absent. */
+  onFeedback?: () => void;
 }
 
 export const randomSeed = () => randomSeedName(makeRng((Math.random() * 2 ** 32) >>> 0));
@@ -41,6 +43,7 @@ export function showTitle(o: TitleOptions): void {
     el('button', { class: s ? '' : 'primary', autofocus: !s, onclick: start }, 'New game'),
     confirmRow,
     el('details', {}, el('summary', {}, 'Controls'), controlsTable()),
+    o.onFeedback ? el('button', { onclick: o.onFeedback }, 'Send feedback') : null,
     el('p', { class: 'hint' }, 'Psst… a certain 1986 code still works on these streets.'),
   );
   show(panel);
